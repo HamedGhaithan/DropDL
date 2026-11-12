@@ -1,0 +1,4 @@
+# Extra packages for running the test suite (pip install -r backend/requirements.txt -r requirements-dev.txt)
+pytest>=8
+httpx>=0.28
+httpx2>=2.16

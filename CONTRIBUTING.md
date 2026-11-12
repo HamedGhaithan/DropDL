@@ -21,7 +21,7 @@ git clone https://github.com/<your-username>/DropDL.git
 cd DropDL
 python -m venv .venv
 .venv\Scripts\activate                 # macOS/Linux: source .venv/bin/activate
-pip install -r backend/requirements.txt pytest
+pip install -r backend/requirements.txt -r requirements-dev.txt
 cd frontend && npm ci && cd ..
 ```
 
