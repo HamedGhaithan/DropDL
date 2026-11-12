@@ -65,13 +65,13 @@ def test_selected_media_export_allows_original_copy(tmp_path,monkeypatch):
 
 def test_built_interface_and_backend_versions_agree():
     root=Path(__file__).resolve().parents[1]
-    build=json.loads((root/'frontend/dist/build.json').read_text())
-    assert build['version']==VERSION==json.loads((root/'frontend/package.json').read_text())['version']
+    build=json.loads((root/'frontend/dist/build.json').read_text(encoding='utf-8'))
+    assert build['version']==VERSION==json.loads((root/'frontend/package.json').read_text(encoding='utf-8'))['version']
     assert {'converter','clip-studio','media-library','queue-tools','selection'}<=set(build['features'])
     import re
-    index=(root/'frontend/dist/index.html').read_text()
+    index=(root/'frontend/dist/index.html').read_text(encoding='utf-8')
     entry=re.search(r'src="(/assets/[^"]+\.js)"',index).group(1)
-    bundle=(root/'frontend/dist'/entry.lstrip('/')).read_text()
+    bundle=(root/'frontend/dist'/entry.lstrip('/')).read_text(encoding='utf-8')
     for label in [VERSION,'Media library','Clip Studio','Pause downloads','Save selected as ZIP']:
         assert label in bundle
     assert client.get('/api/health').json()['version']==VERSION
