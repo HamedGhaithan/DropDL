@@ -33,7 +33,7 @@
     "esbuild": "^0.28.2",
     "jsdom": "26.1.0",
     "typescript": "^5.8.0",
-    "vite": "^7.0.0"
+    "vite": "^7.3.8"
   },
   "overrides": {
     "decimal.js": "10.6.0"
