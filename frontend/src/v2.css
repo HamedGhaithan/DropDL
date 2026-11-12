@@ -1,0 +1,9 @@
+/* DropDL Studio 2.0 additions: smart extras, network panel, recovery states */
+.dl-extras{margin-top:14px;padding:14px;border-radius:12px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));background:color-mix(in srgb,var(--accent) 5%,var(--surface));display:grid;gap:10px}
+.dl-extras h4,.network-panel h3{display:flex;align-items:center;gap:8px;margin:0;font-size:13px}
+.dl-extras .settings-grid,.network-panel .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.dl-extras label,.network-panel label{font-size:12px;color:var(--muted)}
+.network-panel{display:grid;gap:10px}
+.network-panel input[aria-invalid=true]{border-color:var(--danger)}
+.new-pill{font-size:9px;font-weight:800;letter-spacing:.8px;padding:2px 7px;border-radius:999px;color:#fff;background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 55%,#ff7ab6))}
+tr[data-status=queued] .task-phase{color:color-mix(in srgb,var(--accent) 75%,var(--text))}

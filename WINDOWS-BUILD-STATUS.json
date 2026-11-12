@@ -1,0 +1,35 @@
+{
+  "version": "2.3.0",
+  "backend_tests_passed": 232,
+  "backend_tests_skipped": 1,
+  "test_platform": "Windows 11, Python 3.12",
+  "ui_checks": [
+    "jsdom main UI regression suite (English/Arabic, 198-task queue)",
+    "timeline and clip-time model checks",
+    "smart extras, size estimates and audio formats in the composer",
+    "network & reliability preferences save and apply live",
+    "Arabic RTL network panel",
+    "export frame-rate defaults model check",
+    "visual review: dark/light, English/Arabic RTL, home, queue, drawer, library, editor, export dialog",
+    "command-center shell: smart bar filtering and link detection, task cards, inspector open/close (jsdom, EN/AR)",
+    "headless Edge 1440x900 review: downloads, inspector, add-download sheet, preferences, convert, library, live download, editor; EN/AR, dark/light",
+    "real-browser suites on Microsoft Edge: editor, library, player",
+    "pro editor timecode model check"
+  ],
+  "native_backend_e2e_on_windows": [
+    "SoundCloud MP3 192 kbps / FLAC / Opus with embedded cover art",
+    "Dailymotion H.264 MP4 with cover art and metadata",
+    "archive.org MP4 healed from incompatible Theora source",
+    "hard-killed backend: worker self-exit and resume from partial file",
+    "editor export at source 24 FPS (H.264 24/1)",
+    "ICO frames decoded by System.Drawing 16-256 px"
+  ],
+  "not_verified": [
+    "YouTube downloads (bot check from test IP)",
+    "packaged WebView2 window and tray icon",
+    "running DropDL-Setup.exe end-to-end (not executed here to avoid upgrading the user's live 1.0.2 install)"
+  ],
+  "native_windows_tested": "backend and browser UI only",
+  "installer_compiled": true,
+  "installer_compiler": "NSIS 3.11 (Windows)"
+}

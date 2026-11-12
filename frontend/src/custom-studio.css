@@ -1,0 +1,34 @@
+/* Integrate the ink/mint design while keeping the custom 0.8 productivity UI. */
+body::before{display:none}
+.sidebar{position:sticky;top:0;overflow-y:auto;overflow-x:hidden}
+.collapse-toggle{inset-inline-end:12px;top:10px;width:22px;height:22px;border-radius:7px;box-shadow:none}
+.manager.collapsed .sidebar{overflow-y:auto;overflow-x:hidden;padding-top:38px}
+.manager.collapsed .collapse-toggle{inset-inline-end:28px}
+.manager.collapsed .brand{margin-inline:0;justify-content:center}
+.manager.collapsed .add-download span{display:none}
+.manager.collapsed .sidebar-bottom{padding-inline:6px}
+.manager.collapsed .engine{font-size:0;gap:0}
+.manager.collapsed .sidebar-bottom>small{display:none}
+.overview{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.overview>.stat{padding:16px 18px;min-height:106px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);gap:9px}
+.overview .stat strong{font-size:25px;font-weight:650;line-height:1.2;display:flex;align-items:baseline;gap:8px}
+.overview .stat small{font-size:10px;font-weight:500;color:var(--muted)}
+.stat-head{font-size:10px;font-weight:550;gap:8px}
+.stat-head i{width:24px;height:24px;background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.stat-head em.live{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.stat-speed .sparkline{height:30px;opacity:.35}
+.stat-speed .sparkline.live{opacity:.6}
+.stat::before,.download-workspace::before{background:radial-gradient(280px circle at var(--mx) var(--my),color-mix(in srgb,var(--accent) 7%,transparent),transparent 70%)}
+.overall{border-radius:12px;background:var(--surface);box-shadow:none;margin-bottom:16px}
+.palette-trigger{min-width:220px;height:36px;border-radius:10px;padding:8px 11px;font-size:11px;box-shadow:none}
+.palette-input input,.palette-input input:focus{background:transparent;border:0;box-shadow:none}
+.palette,.shortcuts-sheet{background:var(--surface);border-color:var(--border);box-shadow:0 24px 70px #0005}
+li.active .palette-icon{color:var(--on-accent)}
+.status-badge{padding-inline-start:10px}
+.status-badge::before{display:none}
+.clip-toast{background:var(--surface);border-color:var(--border)}
+:root[data-density=compact] .overview>.stat{padding:12px 16px;min-height:88px}
+@media(max-width:1150px){.overview{grid-template-columns:repeat(2,minmax(0,1fr))}.palette-trigger{min-width:0}.palette-trigger span,.palette-trigger kbd{display:none}}
+@media(max-width:760px){.sidebar{position:relative;height:auto;overflow:visible}.collapse-toggle{display:none}.manager.collapsed{grid-template-columns:minmax(0,1fr)}.manager.collapsed .sidebar{padding:16px;overflow:visible}.manager.collapsed .brand>div:not(.mark),.manager.collapsed .sidebar nav button span{display:block}.manager.collapsed .sidebar nav button{font-size:11px;gap:6px}.manager.collapsed .add-download span{display:block}.manager.collapsed .add-download{font-size:12px;gap:8px}.manager.collapsed .brand{justify-content:flex-start}.overview{gap:10px}.overview>.stat{padding:13px;min-height:95px}.overview .stat strong{font-size:22px}.palette-trigger{padding:8px}.capture-deck{margin-top:8px}}
+
+.clip-export-indicator{position:fixed;bottom:24px;inset-inline-end:24px;z-index:70;width:min(320px,calc(100vw - 32px));display:grid;gap:10px}.clip-export-indicator .preview-toast{position:static;width:100%;margin:0}.clip-export-indicator .cancel-button{margin-top:12px}

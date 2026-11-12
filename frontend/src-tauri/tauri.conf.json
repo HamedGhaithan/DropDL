@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "DropDL Studio",
+  "version": "0.8.4",
+  "identifier": "com.dropdl.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "DropDL Studio",
+        "width": 1180,
+        "height": 840,
+        "minWidth": 800,
+        "minHeight": 650,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "externalBin": [
+      "binaries/dropdl-backend"
+    ],
+    "windows": {
+      "wix": null,
+      "nsis": null
+    }
+  }
+}

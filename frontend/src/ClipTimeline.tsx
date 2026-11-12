@@ -1,0 +1,10 @@
+import {useEffect,useState} from 'react'
+import {API_BASE,Job} from './api'
+import {Language} from './i18n'
+import {clipClock} from './ClipTimeInput'
+export default function ClipTimeline({job,lang,start,end,seek,position,ranges,setRanges}:{job:Job;lang:Language;start:number;end:number;seek:(seconds:number)=>void;position:number;ranges:[number,number][];setRanges:(ranges:[number,number][])=>void}){
+ const [visuals,setVisuals]=useState(false),[fps,setFps]=useState(30),[waveError,setWaveError]=useState(false)
+ const text=(en:string,ar:string)=>lang==='ar'?ar:en
+ useEffect(()=>{setVisuals(false);setWaveError(false);void fetch(`${API_BASE}/api/jobs/${job.id}/media-info`).then(r=>r.json()).then(data=>{if(data.fps>0)setFps(data.fps)}).catch(()=>{})},[job.id])
+ return <section className="clip-extras"><div className="button-row"><button className="secondary compact" onClick={()=>seek(Math.max(0,position-1/fps))}>{text('Previous frame','الإطار السابق')}</button><button className="secondary compact" onClick={()=>seek(position+1/fps)}>{text('Next frame','الإطار التالي')}</button><button className="ghost compact" onClick={()=>setVisuals(!visuals)}>{text('Timeline thumbnails & waveform','صور الخط الزمني والموجة الصوتية')}</button><button className="secondary compact" disabled={end<=start} onClick={()=>setRanges([...ranges,[start,end]])}>{text('Add this range','إضافة هذا النطاق')}</button></div>{visuals&&<><div className="filmstrip">{Array.from({length:8},(_,index)=><img key={index} loading="lazy" src={`${API_BASE}/api/jobs/${job.id}/frame/${index}`} alt=""/>)}</div>{!waveError&&<img className="audio-waveform" src={`${API_BASE}/api/jobs/${job.id}/waveform`} alt={text('Audio waveform','الموجة الصوتية')} onError={()=>setWaveError(true)}/>}</>}{ranges.length>0&&<div className="clip-range-list"><strong>{text('Export all selected ranges','تصدير جميع النطاقات المحددة')}</strong>{ranges.map(([a,b],index)=><div key={index}><span dir="ltr">{index+1} · {clipClock(a)} → {clipClock(b)}</span><button className="ghost compact" onClick={()=>setRanges(ranges.filter((_,i)=>i!==index))}>{text('Remove','إزالة')}</button></div>)}</div>}</section>
+}

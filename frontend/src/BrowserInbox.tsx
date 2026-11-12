@@ -1,0 +1,12 @@
+import {useEffect,useState} from 'react'
+import {API_BASE} from './api'
+import {Language} from './i18n'
+export default function BrowserInbox({lang,onLink}:{lang:Language;onLink:(url:string)=>void}){
+ const [links,setLinks]=useState<{id:string;url:string;title:string}[]>([]),[code,setCode]=useState(''),[error,setError]=useState('')
+ const text=(en:string,ar:string)=>lang==='ar'?ar:en
+ async function request(path:string,post=false){const r=await fetch(API_BASE+'/api/browser'+path,post?{method:'POST',headers:{'content-type':'application/json'},body:'{}'}:{});const data=await r.json();if(!r.ok)throw Error(data.detail||'Request failed');return data}
+ const refresh=()=>request('/inbox').then(r=>setLinks(r.links||[]))
+ useEffect(()=>{void refresh().catch(()=>{});const timer=setInterval(()=>void refresh().catch(()=>{}),5000);return()=>clearInterval(timer)},[])
+ const run=async(action:()=>Promise<void>)=>{try{setError('');await action()}catch(e){setError(String(e))}}
+ return <details className="panel browser-inbox"><summary>{text('Browser integration & inbox','تكامل المتصفح وصندوق الروابط')} · {links.length}</summary><p className="muted">{text('Load the included browser-extension folder in Chrome or Edge developer mode. Pair it using a five-minute code; sending a tab adds a link here without starting a download.','حمّل مجلد browser-extension المرفق في وضع المطور في Chrome أو Edge. اربطه برمز صالح لخمس دقائق؛ إرسال علامة تبويب يضيف رابطًا هنا دون بدء التنزيل.')}</p><div className="button-row"><button className="secondary" onClick={()=>void run(async()=>setCode((await request('/pair-code',true)).code))}>{text('Generate pairing code','إنشاء رمز ربط')}</button><button className="ghost" onClick={()=>void run(async()=>{await request('/unpair',true);setCode('')})}>{text('Disconnect all extensions','فصل جميع الإضافات')}</button>{code&&<strong className="pairing-code" dir="ltr">{code}</strong>}</div>{error&&<p className="job-error">{error}</p>}{links.map(link=><div className="browser-inbox-row" key={link.id}><div><strong dir="auto">{link.title||link.url}</strong><p dir="ltr">{link.url}</p></div><button className="primary compact" onClick={()=>void run(async()=>{onLink(link.url);await request('/inbox/'+link.id+'/remove',true);await refresh()})}>{text('Choose download options','اختيار إعدادات التنزيل')}</button><button className="ghost" onClick={()=>void run(async()=>{await request('/inbox/'+link.id+'/remove',true);await refresh()})}>{text('Dismiss','تجاهل')}</button></div>)}</details>
+}

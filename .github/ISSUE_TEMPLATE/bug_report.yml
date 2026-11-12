@@ -1,0 +1,68 @@
+name: Bug report
+description: Something in DropDL Studio doesn't work as expected.
+labels: ["bug", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this! If a single website stopped working, first try **Preferences → Update yt-dlp engine**, since most site breakages are fixed there.
+  - type: input
+    id: version
+    attributes:
+      label: DropDL version
+      description: Shown at the bottom right of the main window, for example "DropDL 2.3.0 · yt-dlp 2026.10.26".
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Downloads
+        - Convert
+        - Editor / Clip Studio
+        - Library
+        - Installer / update
+        - Browser extension
+        - Interface / translation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead? Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Paste https://…
+        2. Choose MP3
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log lines
+      description: Relevant lines from `%LOCALAPPDATA%\DropDL\diagnostics.log` or the task's `worker.log`. Remove usernames, paths and anything private first.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and this isn't a duplicate.
+          required: true
+        - label: I'm using the latest DropDL release.

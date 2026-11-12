@@ -1,0 +1,1 @@
+{"manifest_version":3,"name":"Send to DropDL","version":"0.6.0","description":"Send the current tab to your paired local DropDL desktop app.","permissions":["activeTab","storage"],"host_permissions":["http://127.0.0.1:17321/*"],"action":{"default_popup":"popup.html"}}
