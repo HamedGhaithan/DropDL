@@ -18,7 +18,7 @@ Development-only tools (Vite, TypeScript, esbuild, jsdom, Tauri CLI, PyInstaller
 
 Screenshots in `docs/media` show *Big Buck Bunny* (© Blender Foundation, CC BY 3.0, peach.blender.org) and *Popeye for President* (public domain, via archive.org) as sample media.
 
-## Trailer (`docs/media/trailer.mp4` and the release videos)
+## Trailer (the release videos)
 
 - Footage shown in the editor: *Big Buck Bunny* © Blender Foundation, CC BY 3.0.
 - Piano: [Salamander Grand Piano](https://freepats.zenvoid.org/Piano/acoustic-grand-piano.html) by Alexander Holm, CC BY 3.0.
