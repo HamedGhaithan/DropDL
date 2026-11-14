@@ -17,3 +17,12 @@ DropDL Studio's own code is under the [MIT License](LICENSE). It uses the follow
 Development-only tools (Vite, TypeScript, esbuild, jsdom, Tauri CLI, PyInstaller, NSIS, pytest) are not shipped to users.
 
 Screenshots in `docs/media` show *Big Buck Bunny* (© Blender Foundation, CC BY 3.0, peach.blender.org) and *Popeye for President* (public domain, via archive.org) as sample media.
+
+## Trailer (`docs/media/trailer.mp4` and the release videos)
+
+- Footage shown in the editor: *Big Buck Bunny* © Blender Foundation, CC BY 3.0.
+- Piano: [Salamander Grand Piano](https://freepats.zenvoid.org/Piano/acoustic-grand-piano.html) by Alexander Holm, CC BY 3.0.
+- Drums: [MuldjordKit](https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html) by Lars Muldjord, FreePats edition, CC BY 4.0.
+- Strings: [VSCO 2 Community Edition](https://github.com/sgossner/VSCO-2-CE), CC0.
+- Bass: [Bass Guitar YR](https://freepats.zenvoid.org/) from FreePats, CC0.
+- Music composition, sound effects and animation are original to this project and released under the MIT License with the rest of the repository.

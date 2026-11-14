@@ -14,6 +14,11 @@
 
 <p align="center"><b><a href="https://github.com/HamedGhaithan/DropDL/releases/latest">⬇ Download for Windows</a></b></p>
 
+<p align="center">
+  <a href="docs/media/trailer.mp4"><img src="docs/media/trailer-poster.jpg" alt="Watch the DropDL Studio trailer (1 minute)" width="85%"></a>
+  <br><sub>▶ <a href="docs/media/trailer.mp4">Watch the 60-second trailer</a> · full quality <a href="https://github.com/HamedGhaithan/DropDL/releases/download/v2.3.0/DropDL-Studio-trailer-16x9.mp4">16:9</a> / <a href="https://github.com/HamedGhaithan/DropDL/releases/download/v2.3.0/DropDL-Studio-trailer-9x16.mp4">9:16</a></sub>
+</p>
+
 ![The Downloads window](docs/media/downloads-dark.jpg)
 
 ## Features
