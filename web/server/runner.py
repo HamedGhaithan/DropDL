@@ -11,6 +11,8 @@ import json
 import math
 import os
 import re
+import secrets
+import shutil
 import signal
 import subprocess
 import sys
@@ -77,26 +79,54 @@ def normalise_spec(url: str, kind: str | None, height: int | None, fmt: str | No
 
 
 # ----------------------------------------------------------------------------- command lines
-def _common(settings: Settings) -> list[str]:
+def _js_runtime_args() -> list[str]:
+    """YouTube's checks need a JavaScript runtime. yt-dlp only enables Deno by default, so switch Node on when it exists."""
+    return ["--js-runtimes", "node"] if shutil.which("node") else []
+
+
+def _copy_cookies(settings: Settings, destination: Path) -> str | None:
+    """yt-dlp rewrites the cookie file it is given, so every run gets its own private copy and the original is never touched."""
+    if not settings.cookies_file:
+        return None
+    try:
+        shutil.copyfile(settings.cookies_file, destination)
+        if os.name == "posix":
+            os.chmod(destination, 0o600)
+    except OSError:
+        raise RunError("cookies_missing", "The saved cookies file can't be read.") from None
+    return str(destination)
+
+
+def _classify(text: str, code: int | None, settings: Settings) -> tuple[str, str]:
+    error_code, message = classify_error(text, code)
+    if error_code == "youtube_blocked" and settings.cookies_file:
+        return "youtube_cookies", "YouTube rejected the saved cookies. Export a fresh cookies.txt from a signed-in browser and restart."
+    return error_code, message
+
+
+def _common(settings: Settings, cookies: str | None = None) -> list[str]:
     args = [sys.executable, "-P", "-m", "yt_dlp", "--ignore-config",
             "--use-extractors", "default,-generic",          # only sites with a dedicated extractor: no "fetch any URL"
             "--no-playlist", "--playlist-items", "1",
             "--socket-timeout", "20", "--extractor-retries", "2",
             "--cache-dir", str(settings.data_dir / "cache"), "--no-mtime"]
+    args += _js_runtime_args()
+    if cookies:
+        args += ["--cookies", cookies]
     if settings.proxy:
         args += ["--proxy", settings.proxy]
     return args
 
 
-def build_info_args(url: str, settings: Settings) -> list[str]:
-    return _common(settings) + ["--lazy-playlist", "--skip-download", "--dump-single-json", "--no-warnings", "--", url]
+def build_info_args(url: str, settings: Settings, cookies: str | None = None) -> list[str]:
+    return _common(settings, cookies) + ["--lazy-playlist", "--skip-download", "--dump-single-json", "--no-warnings", "--", url]
 
 
-def build_download_args(spec: Spec, settings: Settings, outdir: Path) -> list[str]:
+def build_download_args(spec: Spec, settings: Settings, outdir: Path, cookies: str | None = None) -> list[str]:
     # A trimmed download only fetches the section, so the source may be much longer than a full download may be.
     source_cap = (6 * 3600) if spec.start is not None else settings.max_duration_min * 60
     clip = spec.start is not None
-    args = _common(settings) + [
+    args = _common(settings, cookies) + [
         "--retries", "5", "--fragment-retries", "5", "--concurrent-fragments", "2", "--max-downloads", "1",
         "--match-filters", f"!is_live & duration<=?{source_cap}",
         "--newline", "--progress", "--progress-template", PROGRESS_TEMPLATE,
@@ -284,7 +314,8 @@ def _find_output(folder: Path) -> Path | None:
 def run_download(spec: Spec, outdir: Path, settings: Settings, env: dict[str, str], cancel: threading.Event,
                  on_update: Callable[[dict], None]) -> Result:
     outdir.mkdir(parents=True, exist_ok=True)
-    proc = _spawn(build_download_args(spec, settings, outdir) + [], outdir, env, settings)
+    cookies = _copy_cookies(settings, outdir / "cookies.txt")
+    proc = _spawn(build_download_args(spec, settings, outdir, cookies), outdir, env, settings)
     reason: dict[str, str] = {}
     stop = threading.Event()
     size_limit = int(settings.max_filesize_bytes * 2.3) + 16 * MIB
@@ -346,7 +377,7 @@ def run_download(spec: Spec, outdir: Path, settings: Settings, env: dict[str, st
                 except OSError:
                     pass
         return Result(path=output, title=title, ext=output.suffix.lower().lstrip("."), size=output.stat().st_size)
-    error_code, message = classify_error("\n".join(tail), code)
+    error_code, message = _classify("\n".join(tail), code, settings)
     raise RunError(error_code, message)
 
 
@@ -393,15 +424,22 @@ def _person(name: object) -> str:
 def fetch_info(url: str, settings: Settings, env: dict[str, str], timeout: int = 45) -> dict:
     work = settings.data_dir / "work"
     work.mkdir(parents=True, exist_ok=True)
+    cookie_copy = work / f"info-{secrets.token_hex(6)}.txt"
     try:
-        done = subprocess.run(build_info_args(url, settings), env=env, cwd=str(work), capture_output=True, text=True,
+        try:
+            cookies = _copy_cookies(settings, cookie_copy)
+        except RunError as exc:
+            raise ApiError(500, exc.code, exc.message) from None
+        done = subprocess.run(build_info_args(url, settings, cookies), env=env, cwd=str(work), capture_output=True, text=True,
                               encoding="utf-8", errors="replace", timeout=timeout, stdin=subprocess.DEVNULL)
     except subprocess.TimeoutExpired:
         raise ApiError(504, "timeout", "The site took too long to answer.") from None
     except OSError:
         raise ApiError(500, "failed", "The server could not start the downloader.") from None
+    finally:
+        cookie_copy.unlink(missing_ok=True)
     if done.returncode != 0:
-        code, message = classify_error(done.stderr or done.stdout, done.returncode)
+        code, message = _classify(done.stderr or done.stdout, done.returncode, settings)
         raise ApiError(422, code, message)
     try:
         info = json.loads((done.stdout.strip().splitlines() or [""])[-1])

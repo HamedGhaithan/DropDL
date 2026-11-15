@@ -5,8 +5,10 @@ import contextlib
 import logging
 import math
 import threading
+import time
 from pathlib import Path
 from typing import Callable
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -15,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import __version__, config, runner, safety
+from .auth import COOKIE, Sessions
 from .engine import Engine
 from .errors import ApiError
 from .jobs import FINAL, JobManager
@@ -39,6 +42,10 @@ class InfoRequest(BaseModel):
     url: str = Field(min_length=1, max_length=2048)
 
 
+class LoginRequest(BaseModel):
+    code: str = Field(min_length=1, max_length=200)
+
+
 class JobRequest(BaseModel):
     url: str = Field(min_length=1, max_length=2048)
     kind: str = Field(default="video", max_length=8)
@@ -51,6 +58,7 @@ class JobRequest(BaseModel):
 def create_app(settings: config.Settings | None = None, *, run_fn=None, info_fn: Callable | None = None,
                background: bool = True) -> FastAPI:
     s = settings or config.load()
+    s.check()
     engine = Engine(s)
     manager = JobManager(s, engine, run_fn)
     lookup = info_fn or runner.fetch_info
@@ -58,6 +66,8 @@ def create_app(settings: config.Settings | None = None, *, run_fn=None, info_fn:
     limits = {"info": Limiter(s.info_per_min, 60), "jobs": Limiter(s.jobs_per_hour, 3600),
               "poll": Limiter(s.poll_per_min, 60), "file": Limiter(30, 60)}
     stop = threading.Event()
+    sessions = Sessions(s.access_code) if s.access_code else None      # a private instance asks for the code first
+    login_limits = (Limiter(8, 600), Limiter(60, 600))                  # per visitor, and overall
 
     @contextlib.asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -88,6 +98,13 @@ def create_app(settings: config.Settings | None = None, *, run_fn=None, info_fn:
     def check(url: str) -> safety.Checked:
         return safety.validate_url(url, allowed=s.allowed_sites, blocked=s.blocked_sites, youtube=s.youtube)
 
+    def signed_in(request: Request) -> bool:
+        return sessions is None or sessions.valid(request.cookies.get(COOKIE))
+
+    def need_auth(request: Request) -> None:
+        if not signed_in(request):
+            raise ApiError(401, "unauthorized", "Enter the access code to continue.")
+
     # ------------------------------------------------------------------ errors and headers
     @app.exception_handler(ApiError)
     async def api_error(_: Request, exc: ApiError):
@@ -103,6 +120,10 @@ def create_app(settings: config.Settings | None = None, *, run_fn=None, info_fn:
         length = request.headers.get("content-length")
         if length and length.isdigit() and int(length) > 16 * 1024:
             return JSONResponse({"error": {"code": "bad_request", "message": "Request too large."}}, status_code=413)
+        if sessions is not None and request.method in ("POST", "PUT", "PATCH", "DELETE"):
+            origin = request.headers.get("origin")                      # a page on another site must not act with the visitor's cookie
+            if origin and urlsplit(origin).netloc != request.headers.get("host", ""):
+                return JSONResponse({"error": {"code": "bad_origin", "message": "Cross-site requests are not allowed."}}, status_code=403)
         response = await call_next(request)
         for key, value in SECURITY_HEADERS.items():
             response.headers.setdefault(key, value)
@@ -111,7 +132,7 @@ def create_app(settings: config.Settings | None = None, *, run_fn=None, info_fn:
         path = request.url.path
         if path.startswith("/api/"):
             response.headers.setdefault("Cache-Control", "no-store")
-        elif path.endswith((".woff2", ".svg")):
+        elif path.endswith((".woff2", ".svg", ".png")):
             response.headers.setdefault("Cache-Control", "public, max-age=86400")
         else:
             response.headers.setdefault("Cache-Control", "no-cache")
@@ -119,10 +140,10 @@ def create_app(settings: config.Settings | None = None, *, run_fn=None, info_fn:
 
     # ------------------------------------------------------------------ API
     @app.get("/api/health")
-    def health():
+    def health(request: Request):
         stats = manager.stats()
         return {
-            "ok": True, "version": __version__, "engine": engine.version(), "queued": stats["queued"], "active": stats["active"],
+            "ok": True, "auth": {"required": sessions is not None, "ok": signed_in(request)}, "version": __version__, "engine": engine.version(), "queued": stats["queued"], "active": stats["active"],
             "youtube": s.youtube, "contact": s.abuse_contact,
             "limits": {"max_height": s.max_height, "default_height": s.default_height, "max_filesize": s.max_filesize_bytes,
                        "max_duration": s.max_duration_min * 60, "max_clip": s.max_clip_min * 60, "ttl": s.job_ttl_min * 60,
@@ -131,6 +152,7 @@ def create_app(settings: config.Settings | None = None, *, run_fn=None, info_fn:
 
     @app.post("/api/info")
     def info(body: InfoRequest, request: Request):
+        need_auth(request)
         throttle("info", request)
         checked = check(body.url)
         if not info_slots.acquire(timeout=8):
@@ -142,6 +164,7 @@ def create_app(settings: config.Settings | None = None, *, run_fn=None, info_fn:
 
     @app.post("/api/jobs", status_code=202)
     def create_job(body: JobRequest, request: Request):
+        need_auth(request)
         owner = throttle("jobs", request)
         checked = check(body.url)
         spec = runner.normalise_spec(checked.url, body.kind, body.height, body.format, body.start, body.end, s)
@@ -155,11 +178,13 @@ def create_app(settings: config.Settings | None = None, *, run_fn=None, info_fn:
 
     @app.get("/api/jobs/{job_id}")
     def get_job(job_id: str, request: Request):
+        need_auth(request)
         throttle("poll", request)
         return manager.view(find(job_id))
 
     @app.get("/api/jobs/{job_id}/file")
     def get_file(job_id: str, request: Request):
+        need_auth(request)
         throttle("file", request)
         job = find(job_id)
         if job.status != "done" or job.path is None or not job.path.is_file():
@@ -170,6 +195,7 @@ def create_app(settings: config.Settings | None = None, *, run_fn=None, info_fn:
 
     @app.post("/api/jobs/{job_id}/cancel")
     def cancel_job(job_id: str, request: Request):
+        need_auth(request)
         throttle("poll", request)
         job = find(job_id)
         if job.status not in FINAL:
@@ -178,8 +204,33 @@ def create_app(settings: config.Settings | None = None, *, run_fn=None, info_fn:
 
     @app.delete("/api/jobs/{job_id}", status_code=204)
     def delete_job(job_id: str, request: Request):
+        need_auth(request)
         throttle("poll", request)
         manager.delete(find(job_id))
+
+    @app.post("/api/login")
+    def login(body: LoginRequest, request: Request):
+        if sessions is None:
+            return {"ok": True}
+        for limiter, key in ((login_limits[0], who(request)), (login_limits[1], "all")):
+            allowed, wait = limiter.hit(key)
+            if not allowed:
+                raise ApiError(429, "rate_limited", f"Too many attempts. Try again in {math.ceil(wait)} seconds.", wait)
+        if not sessions.check_code(body.code):
+            time.sleep(0.4)
+            raise ApiError(401, "login_failed", "That code isn't right.")
+        response = JSONResponse({"ok": True})
+        secure = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
+        response.set_cookie(COOKIE, sessions.create(), max_age=sessions.ttl, httponly=True, samesite="lax", secure=secure, path="/")
+        return response
+
+    @app.post("/api/logout")
+    def logout(request: Request):
+        if sessions is not None:
+            sessions.revoke(request.cookies.get(COOKIE))
+        response = JSONResponse({"ok": True})
+        response.delete_cookie(COOKIE, path="/")
+        return response
 
     if s.debug_client_ip:
         @app.get("/api/whoami")

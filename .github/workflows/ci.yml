@@ -80,6 +80,7 @@ jobs:
         run: |
           docker exec web ffmpeg -version | head -1
           docker exec web python -m yt_dlp --version
+          docker exec web node --version
       - name: Real trimmed download (needs archive.org; informational)
         continue-on-error: true
         run: python3 web/smoke.py http://127.0.0.1:7860 --download

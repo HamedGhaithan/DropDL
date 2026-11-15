@@ -7,6 +7,9 @@
   <meta name="description" content="The free web version of DropDL Studio. Paste a link, pick a format, download. No account, no tracking.">
   <meta name="theme-color" content="#080b12">
   <link rel="icon" href="/logo.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon-180.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/style.css">
 </head>
@@ -36,6 +39,7 @@
     </a>
     <span class="grow"></span>
     <button class="icon-btn" id="lang" type="button"><svg class="i"><use href="#i-globe"/></svg><span id="lang-label">العربية</span></button>
+    <button class="icon-btn" id="signout" type="button" hidden><span data-i18n="btn.signout">Sign out</span></button>
     <button class="icon-btn" id="theme" type="button" data-i18n-aria="aria.theme" aria-label="Toggle theme"><svg class="i" id="theme-icon"><use href="#i-moon"/></svg></button>
     <a class="icon-btn" href="https://github.com/HamedGhaithan/DropDL" rel="noopener" data-i18n-aria="aria.github" aria-label="Source code on GitHub"><svg class="i fill"><use href="#i-github"/></svg></a>
   </header>
@@ -44,6 +48,17 @@
     <section class="hero">
       <h1><span data-i18n="hero.1">Paste a link.</span> <span class="grad" data-i18n="hero.2">Get the file.</span></h1>
       <p class="sub" data-i18n="hero.sub">Free, no account, no tracking. Pick a format and download straight from your browser.</p>
+    </section>
+
+    <section id="login" class="card login" hidden aria-labelledby="login-title">
+      <h2 id="login-title" data-i18n="login.title">Enter your access code</h2>
+      <p class="hint" data-i18n="login.body">This is a private DropDL. Ask whoever runs it for the code.</p>
+      <form id="login-form" novalidate>
+        <label class="sr-only" for="code" data-i18n="login.label">Access code</label>
+        <input id="code" class="input" type="password" autocomplete="current-password" enterkeyhint="go" maxlength="200">
+        <button class="btn primary" type="submit" data-i18n="login.go">Unlock</button>
+      </form>
+      <p class="field-error" id="login-error" role="alert"></p>
     </section>
 
     <form id="bar" class="bar" novalidate autocomplete="off">

@@ -45,6 +45,18 @@ class Settings:
     abuse_contact: str           # https:// or mailto: link shown in the footer
     enable_docs: bool
     debug_client_ip: bool        # exposes /api/whoami so an operator can check TRUSTED_PROXY_HOPS
+    access_code: str             # if set, visitors must enter it first: a private instance
+    cookies_file: Path | None    # the owner's own cookies.txt (YouTube needs a signed-in session); requires access_code
+
+    def check(self) -> None:
+        """Refuse unsafe combinations at start-up instead of running them."""
+        if self.access_code and len(self.access_code) < 8:
+            raise ValueError("ACCESS_CODE must be at least 8 characters long.")
+        if self.cookies_file is not None:
+            if not self.access_code:
+                raise ValueError("YTDLP_COOKIES_FILE needs ACCESS_CODE: otherwise anyone who finds the site could download with your account.")
+            if not self.cookies_file.is_file():
+                raise ValueError(f"YTDLP_COOKIES_FILE was not found: {self.cookies_file}")
 
     @property
     def jobs_dir(self) -> Path:
@@ -68,6 +80,7 @@ def load() -> Settings:
     if contact and not contact.startswith(("https://", "mailto:")):
         contact = ""
     youtube = os.getenv("YOUTUBE", "off").strip().lower()
+    cookies = os.getenv("YTDLP_COOKIES_FILE", "").strip()
     return Settings(
         data_dir=Path(os.getenv("DATA_DIR") or Path(tempfile.gettempdir()) / "dropdl-web"),
         max_height=max_height,
@@ -93,4 +106,6 @@ def load() -> Settings:
         abuse_contact=contact,
         enable_docs=os.getenv("ENABLE_DOCS", "") == "1",
         debug_client_ip=os.getenv("DEBUG_CLIENT_IP", "") == "1",
+        access_code=os.getenv("ACCESS_CODE", "").strip(),
+        cookies_file=Path(os.path.expandvars(os.path.expanduser(cookies))) if cookies else None,
     )

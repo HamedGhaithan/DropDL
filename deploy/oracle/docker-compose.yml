@@ -11,6 +11,7 @@ services:
       TRUSTED_PROXY_HOPS: "1"          # Caddy is the only proxy in front
       MAX_ACTIVE: "2"
       ABUSE_CONTACT: "${ABUSE_CONTACT:-}"
+      ACCESS_CODE: "${ACCESS_CODE:-}"             # set it to make this instance private
       YOUTUBE: "${YOUTUBE:-off}"
       YTDLP_PROXY: "${YTDLP_PROXY:-}"
     read_only: true

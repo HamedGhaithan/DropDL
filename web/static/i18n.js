@@ -59,6 +59,11 @@ const STR = {
     'err.bad_request': "That request wasn't valid.", 'err.not_found': "This download has expired or doesn't exist.",
     'err.not_ready': "This file isn't ready yet.", 'err.offline': "Couldn't reach the server. Check your connection.",
     'err.failed': 'The download failed.', 'err.cancelled': 'Cancelled.',
+    'login.title': 'Enter your access code', 'login.body': 'This is a private DropDL. Ask whoever runs it for the code.',
+    'login.label': 'Access code', 'login.go': 'Unlock', 'btn.signout': 'Sign out',
+    'err.unauthorized': 'Enter the access code to continue.', 'err.login_failed': "That code isn't right.",
+    'err.bad_origin': 'Cross-site requests are not allowed.', 'err.cookies_missing': "The saved cookies file can't be read.",
+    'err.youtube_cookies': 'YouTube rejected the saved cookies. Export a fresh cookies.txt from a signed-in browser and restart.',
   },
   ar: {
     'app.title': 'DropDL Web · الصق الرابط واحصل على الملف',
@@ -119,6 +124,11 @@ const STR = {
     'err.bad_request': 'طلب غير صالح.', 'err.not_found': 'انتهت صلاحية هذا التنزيل أو أنه غير موجود.',
     'err.not_ready': 'هذا الملف ليس جاهزًا بعد.', 'err.offline': 'تعذّر الوصول إلى الخادم. تحقق من اتصالك.',
     'err.failed': 'فشل التنزيل.', 'err.cancelled': 'أُلغي التنزيل.',
+    'login.title': 'أدخل رمز الدخول', 'login.body': 'هذه نسخة خاصة من DropDL. اطلب الرمز ممّن يديرها.',
+    'login.label': 'رمز الدخول', 'login.go': 'فتح', 'btn.signout': 'تسجيل الخروج',
+    'err.unauthorized': 'أدخل رمز الدخول للمتابعة.', 'err.login_failed': 'هذا الرمز غير صحيح.',
+    'err.bad_origin': 'الطلبات القادمة من مواقع أخرى غير مسموحة.', 'err.cookies_missing': 'تعذّرت قراءة ملف ملفات تعريف الارتباط المحفوظ.',
+    'err.youtube_cookies': 'رفض يوتيوب ملفات تعريف الارتباط المحفوظة. صدّر ملف cookies.txt جديدًا من متصفح مسجّل الدخول ثم أعد التشغيل.',
   },
 };
 

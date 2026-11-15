@@ -14,6 +14,9 @@ RUN apt-get update \
 RUN useradd --create-home --uid 1000 --shell /usr/sbin/nologin app \
  && mkdir -p /data && chown app:app /data
 
+# Node.js runs YouTube's checks. Only needed with YOUTUBE=on (plus cookies or a proxy), copied from the official image.
+COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node
+
 WORKDIR /app
 COPY web/requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt

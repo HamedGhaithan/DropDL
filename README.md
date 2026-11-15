@@ -71,6 +71,8 @@ docker build -f web/Dockerfile -t dropdl-web . && docker run --rm -p 7860:7860 d
 
 Deploy guides for Render and Oracle Cloud's free tier are in [`web/README.md`](web/README.md).
 
+**YouTube on your phone:** YouTube blocks free hosts, so run it privately on your own PC instead. Double-click `Start-DropDL-Web.bat`, open the address it prints on your phone, and share YouTube links straight into it. Setup is in [YouTube on your phone](web/README.md#youtube-on-your-phone).
+
 ## Run from source
 
 You need **Python 3.12+**, **Node.js 22+** and **FFmpeg/ffprobe** on your `PATH`.

@@ -37,6 +37,7 @@ function icon(name, cls = '') {
 
 const S = {
   health: null,
+  auth: { required: false, ok: true },
   info: null,
   opt: { kind: 'video', height: null, fmt: { video: 'mp4', audio: 'mp3' }, start: '', end: '', trimOpen: false },
   jobs: store.get('jobs', []),
@@ -63,6 +64,7 @@ async function api(path, { method = 'GET', body, timeout = 70000 } = {}) {
   try { data = await res.json(); } catch { /* not JSON */ }
   if (!res.ok) {
     const e = (data && data.error) || {};
+    if (e.code === 'unauthorized' && S.auth.required) { S.auth.ok = false; applyAuth(); }       // the sign-in expired
     throw { code: e.code || 'failed', message: e.message, status: res.status, retryAfter: Number(res.headers.get('Retry-After')) || 0 };
   }
   return data;
@@ -85,10 +87,13 @@ async function boot() {
   applyStatic();
   setTheme(store.get('theme', 'auto'));
   wire();
+  wireAuth();
   renderJobs();
-  S.jobs.forEach((job) => { if (!FINAL.includes(job.status) || job.status === 'done') poll(job.id); });
   setInterval(tick, 1000);
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => { /* optional */ });
   await loadHealth();
+  applyAuth();
+  if (!locked()) { resumeJobs(); openShared(); }
 }
 
 async function loadHealth() {
@@ -99,6 +104,7 @@ async function loadHealth() {
   clearTimeout(timer);
   clearNotice();
   if (!S.health) { showNotice('error', errorText({ code: 'offline' })); return; }
+  S.auth = S.health.auth || { required: false, ok: true };
   renderStatic();
 }
 
@@ -111,6 +117,7 @@ function renderStatic() {
   yt.hidden = h.youtube !== 'off';
   yt.textContent = t('youtube.off');
   $('#foot-version').textContent = `v${h.version}`;
+  $('.cta').hidden = Boolean(h.auth && h.auth.required);     // the owner of a private instance doesn't need the pitch
   const contact = $('#foot-contact');
   contact.hidden = !h.contact;
   if (h.contact) $('#contact-link').setAttribute('href', h.contact);
@@ -398,6 +405,7 @@ function poll(id) {
       paintJob(job);
       if (FINAL.includes(job.status)) return;
     } catch (e) {
+      if (e.status === 401) return;                  // signed out: the sign-in screen is showing; polling resumes after sign-in
       if (e.status === 404) { job.status = 'expired'; persist(); paintJob(job); return; }
       delay = e.status === 429 ? Math.max(delay, (e.retryAfter || 5) * 1000) : 3000;
     }
@@ -508,6 +516,64 @@ function paintJob(job) {
     if (FINAL.includes(job.status)) buttons.push(el('button', { class: 'btn sm ghost', type: 'button', onclick: () => removeJob(job) }, icon('x'), t('btn.remove')));
     node.actions.replaceChildren(...buttons);
   }
+}
+
+// ------------------------------------------------------------------ private instance: access code and sharing
+const locked = () => S.auth.required && !S.auth.ok;
+
+function applyAuth() {
+  const lock = locked();
+  document.body.toggleAttribute('data-locked', lock);
+  $('#login').hidden = !lock;
+  $('#signout').hidden = !(S.auth.required && S.auth.ok);
+  if (lock) $('#code').focus({ preventScroll: true });
+}
+
+function resumeJobs() {
+  S.jobs.forEach((job) => { if (!FINAL.includes(job.status) || job.status === 'done') poll(job.id); });
+}
+
+function wireAuth() {
+  $('#login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const message = $('#login-error');
+    message.textContent = '';
+    try {
+      await api('/api/login', { method: 'POST', body: { code: $('#code').value } });
+      $('#code').value = '';
+      S.health = await api('/api/health');
+      S.auth = S.health.auth;
+      renderStatic();
+      applyAuth();
+      resumeJobs();
+      openShared();
+    } catch (err) {
+      message.textContent = errorText(err, ctx());
+    }
+  });
+  $('#signout').addEventListener('click', async () => {
+    try { await api('/api/logout', { method: 'POST' }); } catch { /* already signed out */ }
+    S.auth.ok = false;
+    for (const timer of S.timers.values()) clearTimeout(timer);
+    S.timers.clear();
+    S.jobs = [];                                     // a shared phone shouldn't keep the list
+    persist();
+    for (const node of nodes.values()) node.li.remove();
+    nodes.clear();
+    S.info = null;
+    $('#result').hidden = true;
+    $('#jobs-empty').hidden = false;
+    applyAuth();
+  });
+}
+
+// When the page is installed on a phone it shows up in the share sheet: sharing a link from another app opens it here.
+function openShared() {
+  const query = new URLSearchParams(location.search);
+  if (!['url', 'text', 'title'].some((k) => query.has(k))) return;
+  const link = extractUrl(query.get('url') || query.get('text') || query.get('title') || '');
+  history.replaceState(null, '', location.pathname);
+  if (link) { $('#url').value = link; analyze(link); } else showNotice('error', t('err.bad_url'));
 }
 
 boot();
