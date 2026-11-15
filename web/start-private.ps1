@@ -10,7 +10,7 @@
   Settings you can override first (as environment variables): ACCESS_CODE, YTDLP_COOKIES_FILE, MAX_HEIGHT, MAX_FILESIZE_MB, ...
   Where things are kept: %LOCALAPPDATA%\DropDLWeb  (access-code.txt, cookies.txt, data\). Set DROPDLWEB_HOME to move it.
 #>
-param([int]$Port = 7860, [switch]$Tunnel, [switch]$LocalOnly, [switch]$DryRun)
+param([int]$Port = 7860, [switch]$Tunnel, [switch]$LocalOnly, [switch]$DryRun, [switch]$AssumeYes)
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $store = if ($env:DROPDLWEB_HOME) { $env:DROPDLWEB_HOME } else { Join-Path $env:LOCALAPPDATA 'DropDLWeb' }
@@ -57,6 +57,53 @@ $desktopData = if ($env:DROPDL_DATA_ROOT) { $env:DROPDL_DATA_ROOT } else { Join-
 $choices = @($env:YTDLP_COOKIES_FILE, (Join-Path $store 'cookies.txt'), (Join-Path $desktopData 'cookies.txt')) | Where-Object { $_ }
 $cookies = $choices | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
 
+# 3b. A cookies.txt you just exported to Downloads is picked up (and moved out of Downloads) when it is newer than the one in use.
+#     Only the cookie NAMES are looked at, to tell whether the file is signed in to YouTube; values are never shown.
+function Get-CookieCheck($path) {
+  try { $lines = Get-Content -LiteralPath $path -TotalCount 5000 -ErrorAction Stop } catch { return $null }
+  if (-not $lines -or $lines[0] -notmatch '^# (Netscape )?HTTP Cookie File') { return $null }
+  $yt = @($lines | Where-Object { $_ -match '^(#HttpOnly_)?\.?youtube\.com\t' })
+  if (-not $yt) { return $null }
+  $names = $yt | ForEach-Object { ($_ -split "`t")[5] }
+  [pscustomobject]@{ SignedIn = [bool]($names | Where-Object { $_ -in 'SAPISID', '__Secure-3PSID', '__Secure-1PSID', 'LOGIN_INFO' }) }
+}
+function Get-DownloadsFolder {
+  try {
+    $raw = (Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders' -ErrorAction Stop).'{374DE290-123F-4565-9164-39C4925E467B}'
+    if ($raw) { return [Environment]::ExpandEnvironmentVariables($raw) }
+  } catch { }
+  Join-Path $env:USERPROFILE 'Downloads'
+}
+if (-not $env:YTDLP_COOKIES_FILE) {
+  $downloads = if ($env:DROPDLWEB_DOWNLOADS) { $env:DROPDLWEB_DOWNLOADS } else { Get-DownloadsFolder }
+  $since = if ($cookies) { (Get-Item -LiteralPath $cookies).LastWriteTime } else { (Get-Date).AddDays(-14) }
+  $fresh = Get-ChildItem -LiteralPath $downloads -Filter '*.txt' -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -gt $since -and $_.Length -lt 2MB } | Sort-Object LastWriteTime -Descending |
+    Where-Object { Get-CookieCheck $_.FullName } | Select-Object -First 1
+  if ($fresh) {
+    Write-Host ''
+    Write-Host "  Found YouTube cookies you exported: $($fresh.Name) ($($fresh.LastWriteTime))" -ForegroundColor Green
+    $answer = if ($AssumeYes) { 'y' } else { Read-Host '  Use them, and move the file out of Downloads so it is not left lying around? [Y/n]' }
+    if ($answer -notmatch '^(n|no)$') {
+      $target = Join-Path $store 'cookies.txt'
+      Copy-Item -LiteralPath $fresh.FullName -Destination $target -Force
+      Remove-Item -LiteralPath $fresh.FullName -Force
+      $cookies = $target
+      Write-Host "  Saved as $target" -ForegroundColor Green
+    }
+  }
+}
+if ($cookies) {
+  $check = Get-CookieCheck $cookies
+  if (-not $check) {
+    Write-Host "  $cookies is not a Netscape cookies.txt with YouTube cookies in it, so YouTube stays off." -ForegroundColor Yellow
+    $cookies = $null
+  } elseif (-not $check.SignedIn) {
+    Write-Host '  Warning: those cookies are not signed in to YouTube, so YouTube will probably still ask to confirm you are not a bot.' -ForegroundColor Yellow
+    Write-Host '           Sign in on youtube.com first, then export again.' -ForegroundColor Yellow
+  }
+}
+
 # 4. Settings for a private instance (anything you set beforehand wins)
 $env:ACCESS_CODE = $code
 $env:PORT = "$Port"
@@ -87,7 +134,7 @@ Write-Host "  Access code : $code"
 if ($cookies) { Write-Host "  YouTube     : ON, using the cookies in $cookies" }
 else {
   Write-Host '  YouTube     : OFF (no cookies.txt found)' -ForegroundColor Yellow
-  Write-Host "                Save your exported cookies.txt as $store\cookies.txt and start again."
+  Write-Host '                Export cookies.txt from youtube.com into Downloads and start again; it is picked up by itself.'
   Write-Host '                How: web\README.md, "YouTube on your phone".'
 }
 Write-Host "  On this PC  : http://127.0.0.1:$Port"

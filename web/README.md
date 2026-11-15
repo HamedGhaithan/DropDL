@@ -70,7 +70,7 @@ On a free public host `YOUTUBE` stays `off`: the page says so immediately and po
 
 **You need** a Windows PC that stays on while you download, with Python, FFmpeg and Node.js (Node is what YouTube's checks run on). The DropDL desktop app's setup installs all three, and the launcher reuses its Python.
 
-1. **Export your YouTube cookies** as `cookies.txt`. A spare Google account is wise: YouTube can limit accounts it sees downloading. Open a **private/incognito** window, sign in to YouTube, go to `https://www.youtube.com/robots.txt`, export the cookies for youtube.com with a cookies.txt browser extension (for example "Get cookies.txt LOCALLY"), then close the window. That keeps YouTube from rotating the session out from under the file. Save it as `%LOCALAPPDATA%\DropDLWeb\cookies.txt`. If you already imported cookies into the desktop app, the launcher finds and reuses those.
+1. **Export your YouTube cookies** as `cookies.txt`. A spare Google account is wise: YouTube can limit accounts it sees downloading. Open a **private/incognito** window, sign in to YouTube, go to `https://www.youtube.com/robots.txt`, export the cookies for youtube.com with a cookies.txt browser extension (for example "Get cookies.txt LOCALLY"), then close the window. That keeps YouTube from rotating the session out from under the file. Leave it in **Downloads**: the launcher finds it, checks that it is signed in to YouTube, and moves it to `%LOCALAPPDATA%\DropDLWeb\cookies.txt` (you can also put it there yourself). If you already imported cookies into the desktop app, the launcher finds and reuses those.
 2. **Double-click `Start-DropDL-Web.bat`** in the repository folder. It makes an access code once (kept in `%LOCALAPPDATA%\DropDLWeb\access-code.txt`) and prints the addresses to open. If Windows asks about the firewall, allow Python on **private** networks.
 3. **On your phone**, on the same Wi-Fi, open the printed address, enter the code, paste a YouTube link. Then add it to your home screen (Chrome: ⋮ → *Install app*; Safari: Share → *Add to Home Screen*).
    - **Android:** DropDL now appears in the Share sheet. In the YouTube app tap Share → DropDL and it starts analyzing by itself.
@@ -80,7 +80,7 @@ On a free public host `YOUTUBE` stays `off`: the page says so immediately and po
 Good to know:
 
 - **Your cookies are your login.** They stay on your PC, in a file only you can read, and are never uploaded. Each download works from a private temporary copy that is deleted with the job. The server refuses to start with cookies unless an access code is set, because otherwise anyone who found the address could download with your account.
-- Cookies expire. When the page says YouTube "rejected the saved cookies", export a fresh `cookies.txt` and restart.
+- Cookies expire. When the page says YouTube "rejected the saved cookies", export a fresh `cookies.txt` to Downloads and restart; the newer file replaces the old one.
 - Your PC does the work over your home connection; the phone only receives the finished file.
 - To check the setup: `python web\smoke.py http://127.0.0.1:7860 --code YOURCODE --url "https://www.youtube.com/watch?v=..." --download` (trims 6 seconds, so it is quick).
 - The launcher's options: `-Tunnel`, `-LocalOnly` (this PC only), `-DryRun` (show the settings and addresses, start nothing), `-Port`.
