@@ -46,6 +46,47 @@ jobs:
       - name: Run tests
         run: python -m pytest tests -q
 
+  web:
+    name: Web version tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            web/requirements.txt
+            requirements-dev.txt
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - run: pip install -r web/requirements.txt -r requirements-dev.txt
+      - run: python -m pytest web/tests -q
+
+  web-image:
+    name: Web image builds and runs
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f web/Dockerfile -t dropdl-web .
+      - name: Start the container
+        run: |
+          docker run -d --name web -p 7860:7860 dropdl-web
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:7860/api/health >/dev/null && break; sleep 2; done
+      - name: Smoke test (health, page, refused links)
+        run: python3 web/smoke.py http://127.0.0.1:7860
+      - name: Tools inside the image
+        run: |
+          docker exec web ffmpeg -version | head -1
+          docker exec web python -m yt_dlp --version
+      - name: Real trimmed download (needs archive.org; informational)
+        continue-on-error: true
+        run: python3 web/smoke.py http://127.0.0.1:7860 --download
+      - name: Container log
+        if: always()
+        run: docker logs web
+
   frontend:
     name: Interface build and checks
     runs-on: windows-latest
