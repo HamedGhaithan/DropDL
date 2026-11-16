@@ -146,7 +146,6 @@ class JobManager:
     # -- internals -------------------------------------------------------------
     def _finish(self, job: Job, status: str, code: str = "", message: str = "") -> None:
         with self._lock:
-            job.status = status
             job.finished = time.time()
             job.speed = job.eta = None
             if status == "done":
@@ -155,6 +154,9 @@ class JobManager:
             else:
                 job.error_code, job.error = code, message
                 shutil.rmtree(job.dir, ignore_errors=True)       # nothing worth keeping from a failed job
+            # Publish the final state last: readers poll `status` without the lock, so everything
+            # it implies (files removed, result fields set) must already be true when it changes.
+            job.status = status
 
     def _update(self, job: Job, fields: dict) -> None:
         job.stage = fields.get("stage", job.stage)
