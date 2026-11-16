@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 import os
 import shutil
 import sys
@@ -173,6 +175,13 @@ def _extract(options: dict[str, Any], url: str) -> dict[str, Any]:
         return ydl.sanitize_info(info)
 
 
+def _public_name(value):
+    """Uploader names only; some sites (archive.org) put the uploader's email address there."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return None if re.search(r"[^\s@]+@[^\s@]+\.[^\s@]+", value) else value
+
+
 def inspect_url(url: str) -> dict[str, Any]:
     options = {
         "quiet": True,
@@ -212,7 +221,7 @@ def inspect_url(url: str) -> dict[str, Any]:
     return {
         "id": info.get("id"),
         "title": info.get("title") or "Untitled media",
-        "uploader": info.get("uploader") or info.get("channel") or info.get("extractor_key"),
+        "uploader": _public_name(info.get("uploader") or info.get("channel")) or info.get("extractor_key"),
         "duration": info.get("duration"),
         "thumbnail": info.get("thumbnail"),
         "webpage_url": info.get("webpage_url") or url,

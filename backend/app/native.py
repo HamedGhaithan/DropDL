@@ -16,6 +16,26 @@ class NativeAPI:
         if not tray:return False
         return tray.configure(enabled,language)
 
+    # ---- 3.0: Connect (YouTube sign-in, copied-link catcher, notifications)
+    def _connect(self):
+        connect=getattr(self,'_connect_parts',None)
+        if connect is None:raise RuntimeError('Connect features are only available in the desktop app.')
+        return connect
+    def youtube_sign_in(self,language='en'):
+        return self._connect()['youtube'].sign_in('ar' if language=='ar' else 'en')
+    def youtube_refresh(self):
+        return self._connect()['youtube'].refresh()
+    def youtube_disconnect(self):
+        return self._connect()['youtube'].disconnect()
+    def configure_clipboard(self,enabled,language='en'):
+        return self._connect()['catcher'].configure(enabled,language)
+    def notify(self,title,message,job_id=None):
+        import json
+        if not isinstance(title,str) or not isinstance(message,str):raise ValueError('Invalid notification.')
+        if job_id is not None and (not isinstance(job_id,str) or len(job_id)>64 or not job_id.isalnum()):raise ValueError('Invalid task.')
+        script=f"window.dropdlFocusJob&&window.dropdlFocusJob({json.dumps(job_id)})" if job_id else None
+        return self._connect()['notifier'].show(title[:120],message[:240],script)
+
     def choose_folder(self):
         import webview
         result = self._window.create_file_dialog(webview.FileDialog.FOLDER, directory=self._settings.get()['download_directory'])

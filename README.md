@@ -24,6 +24,11 @@ https://github.com/user-attachments/assets/2c28e6c3-20cd-4f47-83e3-a1ac002bb525
 
 ## Features
 
+**Connect (new in 3.0)**
+- **Phone Link:** scan a QR code and your phone becomes a remote for DropDL. Paste or share a link on the phone, your PC downloads it, and you save or play the result on the phone. Home network only, paired phones only.
+- **Connect YouTube in one click:** sign in once in DropDL's own sign-in window; downloads (on the PC and from your phone) use that session. No more exporting cookies.txt.
+- **Copied-link catcher and notifications:** copy a video link anywhere and DropDL offers to download it; get a Windows notification when downloads finish.
+
 **Download**
 - Paste a link anywhere in the window and it starts. Single videos, playlists, channels and pasted batches of links.
 - Video, audio, or both: MP4, WebM, MKV, MP3, M4A, Opus, FLAC and WAV, with quality presets.
@@ -43,7 +48,7 @@ https://github.com/user-attachments/assets/2c28e6c3-20cd-4f47-83e3-a1ac002bb525
 **Everything else**
 - Media library with search and filters, subscriptions to playlists and channels, and a browser extension that sends the current tab to the app.
 - English and Arabic (full right-to-left layout), dark and light themes, keyboard shortcuts and a command palette.
-- Everything stays on your computer. No accounts, no telemetry, no remote error reporting.
+- Everything stays on your computer. No DropDL accounts, no telemetry, no remote error reporting. Phone Link never leaves your own network.
 
 | Editor | Arabic, light theme |
 | --- | --- |

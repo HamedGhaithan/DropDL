@@ -8,10 +8,10 @@ Icon "dropdl.ico"
 RequestExecutionLevel user
 SilentInstall silent
 AutoCloseWindow true
-VIProductVersion "2.3.0.0"
+VIProductVersion "3.0.0.0"
 VIAddVersionKey "ProductName" "DropDL Studio"
 VIAddVersionKey "FileDescription" "DropDL desktop launcher"
-VIAddVersionKey "FileVersion" "2.3.0"
+VIAddVersionKey "FileVersion" "3.0.0"
 VIAddVersionKey "LegalCopyright" "DropDL Studio contributors"
 Section
  SetOutPath "$EXEDIR"

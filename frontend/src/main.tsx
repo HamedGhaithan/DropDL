@@ -22,6 +22,7 @@ import './design.css'
 import './editor-design.css'
 import './shell.css'
 import './editor-pro.css'
+import './connect.css'
 import { startDesktopBackend } from './desktop'
 
 window.addEventListener('error',event=>reportDiagnostic('ui-error',event.error?.stack||event.message))

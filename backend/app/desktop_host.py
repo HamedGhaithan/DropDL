@@ -31,12 +31,18 @@ def create_desktop_window(webview, settings, url, job_lookup=None):
     # discovery of the Window, GUI objects, settings and locks during startup.
     window = webview.create_window(f'DropDL Studio {VERSION}', url, width=1320, height=900, min_size=(800, 620))
     bridge._window = window
-    window.expose(bridge.choose_folder, bridge.open_folder, bridge.choose_media_files, bridge.choose_cookies, bridge.open_downloaded, bridge.open_library,bridge.locate_media,bridge.reveal_library, bridge.launch_repair,bridge.open_editor,bridge.open_player,bridge.export_diagnostics,bridge.configure_tray)
+    window.expose(bridge.choose_folder, bridge.open_folder, bridge.choose_media_files, bridge.choose_cookies, bridge.open_downloaded, bridge.open_library,bridge.locate_media,bridge.reveal_library, bridge.launch_repair,bridge.open_editor,bridge.open_player,bridge.export_diagnostics,bridge.configure_tray,bridge.youtube_sign_in,bridge.youtube_refresh,bridge.youtube_disconnect,bridge.configure_clipboard,bridge.notify)
     window.events.shown += lambda: apply_windows_icon(window)
+    tray=None
     if os.name=='nt':
         from .windows_tray import WindowsTray
         tray=WindowsTray(window,webview,settings);bridge._tray=tray
         window.events.shown += tray.install
+    # 3.0: YouTube sign-in window, copied-link catcher and notifications (the window process owns these)
+    from .connect_native import LinkCatcher, Notifier, YouTubeAccount
+    notifier=Notifier(window,tray)
+    bridge._connect_parts={'notifier':notifier,'catcher':LinkCatcher(window,notifier),'youtube':YouTubeAccount(webview,window,getattr(settings,'_backend',None))}
+    window.events.closed += notifier.dispose
     return window, bridge
 
 

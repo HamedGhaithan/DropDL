@@ -41,6 +41,8 @@ class Job:
     cookie_file: str | None = None
     attempt: int = 1
     purpose: str = "download"
+    # 3.0: where the task came from ("" = this PC, "phone:<device id>" = Phone Link)
+    origin: str = ""
     preview_filename: str | None = None
     thumbnail: str | None = None
     title: str = ""
@@ -84,6 +86,7 @@ class Job:
             "container": self.container,
             "quality": self.quality,
             "purpose": self.purpose,
+            "origin": self.origin,
             "preview_ready": bool(self.preview_filename),
             "title": self.title,
             "thumbnail": self.thumbnail,
@@ -151,6 +154,11 @@ class JobStore:
         """Return the revision and the public queue atomically."""
         with self._lock:
             return self.revision, [job.public() for job in reversed(list(self._jobs.values()))]
+
+    def objects(self) -> list[Job]:
+        """Every task, newest first (Phone Link needs origin and file paths)."""
+        with self._lock:
+            return list(reversed(list(self._jobs.values())))
 
     def get(self, job_id: str) -> Job | None:
         with self._lock:

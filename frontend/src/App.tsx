@@ -14,8 +14,9 @@ import {AppearancePanel,designText} from './StudioDesign'
 import Tour from './Tour'
 import ClipTimeline from './ClipTimeline'
 import Workspace,{WorkspaceTab,workText} from './Workspace'
+import Connect from './Connect'
 import {QueueTools,PriorityControls,qText} from './QueueTools'
-import {pauseDownload,reorderQueue,queueControl} from './api'
+import {pauseDownload,reorderQueue,queueControl,sendToPhone} from './api'
 import {Confetti,ClipToast,Count,OverallBar,exportCsv,useClipboardWatch,useSpotlight,useSystemFeedback,ux2} from './upgrade2'
 import {CommandPalette,Command,DropOverlay,ShortcutsSheet,Sparkline,useUrlIntake,ux} from './upgrade'
 import TaskSelection,{selectionText} from './TaskSelection'
@@ -211,7 +212,18 @@ export default function App() {
   const completed = jobs.filter(j => j.status === 'completed' && j.purpose !== 'preview')
   const batches = [...new Set(completed.map(j => j.batch_id).filter((id): id is string => !!id))]
   const totalSpeed = activeJobs.reduce((sum,j)=>sum+(j.speed||0),0)
-  useSystemFeedback(jobs,totalSpeed,pref.sound,pref.notify)
+  useSystemFeedback(jobs,totalSpeed,pref.sound,pref.notify&&preferences?.notify_done!==false,lang)
+  // 3.0: the desktop window process offers copied links and focuses tasks from notifications
+  useEffect(()=>{
+    window.dropdlClipboard=(url:string)=>{if(tour<0)setClipUrl(url)}
+    window.dropdlFocusJob=(id:string)=>{setPalette(false);setSettingsOpen(false);setComposer(false);setWorkspace('downloads');setDetailId(id)}
+    return()=>{delete window.dropdlClipboard;delete window.dropdlFocusJob}
+  },[tour])
+  useEffect(()=>{
+    if(!preferences)return
+    const apply=()=>void window.pywebview?.api?.configure_clipboard?.(preferences.clipboard_watch!==false,lang).catch(()=>{})
+    apply();window.addEventListener('pywebviewready',apply);return()=>window.removeEventListener('pywebviewready',apply)
+  },[preferences?.clipboard_watch,lang,!!preferences])
   useClipboardWatch(pref.clip&&tour<0,setClipUrl)
   useEffect(()=>{const n=activeJobs.length;if(wasActive.current>0&&n===0&&completed.length>wasDone.current){wasDone.current=completed.length;setCelebrate(true);const id=setTimeout(()=>setCelebrate(false),3600);wasActive.current=n;return()=>clearTimeout(id)}wasDone.current=Math.max(wasDone.current,completed.length>0&&wasActive.current===0?completed.length:wasDone.current);wasActive.current=n},[activeJobs.length])
   const totalSaved = completed.reduce((sum,j)=>sum+(j.total_bytes||j.downloaded_bytes||0),0)
@@ -386,6 +398,7 @@ export default function App() {
     ...(preferences?.native_folder_picker?[{id:'folder',group:'group_actions' as const,icon:'folder',label:L('Open download folder','فتح مجلد التنزيل'),keywords:'explorer directory',run:()=>void openFolder()}]:[]),
     ...['all','active','completed','attention','video','audio'].map(v=>({id:`view-${v}`,group:'group_navigate' as const,icon:v,label:t(v as TextKey),keywords:'queue list',run:()=>{setWorkspace('downloads');setView(v)}})),
     ...(['convert','studio','library'] as const).map(section=>({id:`tool-${section}`,group:'group_navigate' as const,icon:section==='library'?'folder':section==='convert'?'convert':'scissors',label:workText(lang,section),keywords:'tool workspace',run:()=>{setComposer(false);setSettingsOpen(false);setWorkspace(section)}})),
+    {id:'tool-connect',group:'group_navigate',icon:'phone',label:workText(lang,'connect'),keywords:'phone link mobile youtube sign in cookies clipboard notifications extension subscriptions',run:()=>{setComposer(false);setSettingsOpen(false);setWorkspace('connect')}},
     {id:'prefs',group:'group_navigate',icon:'settings',label:t('preferences'),keywords:'settings options',run:()=>{setComposer(false);setSettingsOpen(true)}},
     {id:'theme',group:'group_appearance',icon:theme==='dark'?'sun':'moon',label:theme==='dark'?L('Switch to light theme','التبديل إلى السمة الفاتحة'):L('Switch to dark theme','التبديل إلى السمة الداكنة'),keywords:'appearance mode',run:()=>setTheme(theme==='dark'?'light':'dark')},
     {id:'lang',group:'group_appearance',icon:'globe',label:lang==='ar'?'Switch to English':'التبديل إلى العربية',keywords:'language arabic english rtl',run:()=>setLang(lang==='ar'?'en':'ar')},
@@ -424,7 +437,7 @@ export default function App() {
   const taskCard=(job:Job)=><article key={job.id} className={`task-card ${detailId===job.id?'focused':''} ${taskSelection.has(job.id)?'selected':''}`} data-job-id={job.id} data-status={job.status} tabIndex={0} draggable={job.status==='queued'} onDragStart={()=>setDragged(job.id)} onDragOver={e=>{if(job.status==='queued')e.preventDefault()}} onDrop={e=>{e.preventDefault();if(dragged&&job.status==='queued'){const ids=filtered.filter(j=>j.status==='queued').map(j=>j.id).filter(id=>id!==dragged);ids.splice(ids.indexOf(job.id),0,dragged);void act('Reorder',async()=>{await reorderQueue(ids);setSort('priority');setJobs((await getJobs()).jobs)})}setDragged(null)}} onClick={e=>{if(!(e.target as HTMLElement).closest('button,a,input,label'))setDetailId(job.id)}} onKeyDown={e=>{if(e.key==='Enter'&&e.target===e.currentTarget)setDetailId(job.id)}}>
     <label className="selection-cell task-select"><input type="checkbox" aria-label={`${sw('select')}: ${job.title||job.url}`} checked={taskSelection.has(job.id)} disabled={!taskSelection.has(job.id)&&taskSelection.size>=500} onChange={e=>setTaskSelection(old=>{const next=new Set(old);e.target.checked?next.add(job.id):next.delete(job.id);return next})}/></label>
     <div className={`task-thumb ${job.kind}`}><Icon name={job.kind} size={22}/>{thumbFor(job)&&<img loading="lazy" draggable={false} referrerPolicy="no-referrer" src={thumbFor(job)} alt="" onError={e=>{if(job.status==='completed'&&!e.currentTarget.dataset.fallback){e.currentTarget.dataset.fallback='1';e.currentTarget.src=`${API_BASE}/api/jobs/${job.id}/poster`}else e.currentTarget.style.display='none'}}/>}<span className="task-kind"><Icon name={job.kind} size={11}/></span></div>
-    <div className="task-main"><button className="file-title" dir="auto" title={job.title||job.url} onClick={()=>setDetailId(job.id)}>{job.title||job.filename||job.url}</button><small className="task-meta" dir="auto">{hostOf(job)}<span> · {job.container.toUpperCase()} · {job.purpose==='preview'?t('preview'):job.quality==='best'?t('best'):job.quality}</span></small>{!terminal(job)&&job.phase!=='downloading'&&taskPhase(job,lang)&&<small className="task-phase">{taskPhase(job,lang)}</small>}{job.interrupted&&<small className="task-phase">{L('Recovered; ready to resume','تمت الاستعادة؛ جاهز للاستئناف')}</small>}</div>
+    <div className="task-main"><button className="file-title" dir="auto" title={job.title||job.url} onClick={()=>setDetailId(job.id)}>{job.title||job.filename||job.url}</button><small className="task-meta" dir="auto">{job.origin?.startsWith('phone:')&&<span className="origin-badge" title={L('Started from a phone with Phone Link','بدأ من هاتف عبر ربط الهاتف')}><Icon name="phone" size={11}/>{L('From a phone','من هاتف')}</span>}{hostOf(job)}<span> · {job.container.toUpperCase()} · {job.purpose==='preview'?t('preview'):job.quality==='best'?t('best'):job.quality}</span></small>{!terminal(job)&&job.phase!=='downloading'&&taskPhase(job,lang)&&<small className="task-phase">{taskPhase(job,lang)}</small>}{job.interrupted&&<small className="task-phase">{L('Recovered; ready to resume','تمت الاستعادة؛ جاهز للاستئناف')}</small>}</div>
     <div className="task-status"><span className={`status-badge ${job.status}`}>{statusText(job.status)}</span></div>
     <div className="task-progress">{progressOf(job)}</div>
     <div className="row-actions">{taskActions(job)}</div>
@@ -449,13 +462,13 @@ export default function App() {
     {['queued','paused'].includes(detail.status)&&<PriorityControls key={detail.id} job={detail} lang={lang} refresh={()=>void getJobs().then(data=>setJobs(data.jobs))} onError={setError}/>}
     {taskAdvice(detail,lang)&&<p className="recovery-note">{taskAdvice(detail,lang)}</p>}
     {detail.error&&<p className="job-error" dir="auto">{detail.error==='Interrupted by an app restart. Retry to continue.'?t('restartError'):detail.error.replace(/\x1b\[[0-9;]*m/g,'')}</p>}
-    <div className="button-row"><button className="secondary" onClick={()=>void copyLink(detail)}><Icon name="link" size={16}/>{t('copyLink')}</button>{detail.status==='completed'&&<a className="secondary link-button" href={downloadUrl(detail.id)}><Icon name="down" size={16}/>{t('save')}</a>}</div>
+    <div className="button-row"><button className="secondary" onClick={()=>void copyLink(detail)}><Icon name="link" size={16}/>{t('copyLink')}</button>{detail.status==='completed'&&<a className="secondary link-button" href={downloadUrl(detail.id)}><Icon name="down" size={16}/>{t('save')}</a>}{detail.status==='completed'&&detail.purpose==='download'&&<button className="secondary" onClick={()=>void act('Send to phone',async()=>{const r=await sendToPhone({job_id:detail.id});setQueueMessage(r.devices?L('Sent. It is waiting on your phone under Activity.','تم الإرسال. ينتظرك على الهاتف في «النشاط».'):L('Saved for your phone. Pair one in Connect to pick it up.','حُفظ لهاتفك. اربط هاتفًا من «اتصال» لاستلامه.'))})}><Icon name="send" size={16}/>{L('Send to phone','أرسل إلى الهاتف')}</button>}</div>
   </div>
   return <div className={`cc-app ${pref.collapsed?'collapsed':''}`} dir={lang==='ar'?'rtl':'ltr'}>
     <nav className="cc-rail" aria-label={L('Main navigation','التنقل الرئيسي')}>
       <div className="rail-logo" title="DropDL Studio"><Logo/></div>
       <button className={`rail-item ${workspace==='downloads'?'selected':''}`} onClick={()=>{setComposer(false);setSettingsOpen(false);setWorkspace('downloads')}}><span className="rail-icon"><Icon name="down"/>{activeJobs.length>0&&<b className="rail-badge">{activeJobs.length}</b>}</span><span className="rail-label">{t('downloads')}</span></button>
-      <div className="workspace-nav">{(['convert','studio','library'] as const).map(section=><button key={section} className={`rail-item nav-tool ${workspace===section?'selected':''}`} onClick={()=>{setComposer(false);setSettingsOpen(false);setWorkspace(section)}}><span className="rail-icon"><Icon name={section==='library'?'folder':section==='convert'?'convert':'scissors'}/></span><span className="rail-label">{section==='library'?L('Library','المكتبة'):section==='studio'?L('Studio','الاستوديو'):workText(lang,section)}</span></button>)}</div>
+      <div className="workspace-nav">{(['convert','studio','library'] as const).map(section=><button key={section} className={`rail-item nav-tool ${workspace===section?'selected':''}`} onClick={()=>{setComposer(false);setSettingsOpen(false);setWorkspace(section)}}><span className="rail-icon"><Icon name={section==='library'?'folder':section==='convert'?'convert':'scissors'}/></span><span className="rail-label">{section==='library'?L('Library','المكتبة'):section==='studio'?L('Studio','الاستوديو'):workText(lang,section)}</span></button>)}</div><button className={`rail-item nav-tool nav-connect ${workspace==='connect'?'selected':''}`} onClick={()=>{setComposer(false);setSettingsOpen(false);setWorkspace('connect')}}><span className="rail-icon"><Icon name="phone"/></span><span className="rail-label">{workText(lang,'connect')}</span></button>
       <div className="rail-spacer"/>
       <button className="rail-item" aria-label={t('appearance')} title={t('appearance')} onClick={()=>setTheme(theme==='dark'?'light':'dark')}><span className="rail-icon"><Icon name={theme==='dark'?'sun':'moon'}/></span><span className="rail-label">{theme==='dark'?L('Light','فاتح'):L('Dark','داكن')}</span></button>
       <button className={`rail-item nav-tool ${settingsOpen?'selected':''}`} onClick={()=>{setComposer(false);setSettingsOpen(true)}}><span className="rail-icon"><Icon name="settings"/></span><span className="rail-label">{t('preferences')}</span></button>
@@ -493,7 +506,8 @@ export default function App() {
           {filtered.length>100&&<div className="list-bottom"><div className="queue-pagination"><button className="secondary compact" disabled={page===0} onClick={()=>setQueuePage(page-1)}>{t('previousPage')}</button><span dir="ltr">{page*100+1}–{Math.min((page+1)*100,filtered.length)}</span><button className="secondary compact" disabled={(page+1)*100>=filtered.length} onClick={()=>setQueuePage(page+1)}>{t('nextPage')}</button></div></div>}
         </section>
         <aside className="cc-inspector" aria-label={L('Inspector','لوحة التفاصيل')}>{detailPanel||overviewPanel}</aside>
-      </div>:<div className="cc-workspace"><Workspace onPlay={playMedia} tab={workspace} setTab={setWorkspace} lang={lang} jobs={jobs} onLink={link=>{acceptURL(link);setWorkspace('downloads');setComposer(true)}} onQueued={()=>void getJobs().then(data=>setJobs(data.jobs))} onPreview={job=>{setPlayback(null);void act('Open editor',()=>openEditor(job.id,lang))}}/></div>}
+      </div>:workspace==='connect'?<div className="cc-workspace cc-connect"><Connect lang={lang} preferences={preferences} onPreferences={async changes=>{if(!preferences)return;setPreferences(await savePreferences({...preferences,...changes}))}} onLink={link=>{acceptURL(link);setWorkspace('downloads');setComposer(true)}}/></div>
+      :<div className="cc-workspace"><Workspace onPlay={playMedia} tab={workspace} setTab={setWorkspace} lang={lang} jobs={jobs} onLink={link=>{acceptURL(link);setWorkspace('downloads');setComposer(true)}} onQueued={()=>void getJobs().then(data=>setJobs(data.jobs))} onPreview={job=>{setPlayback(null);void act('Open editor',()=>openEditor(job.id,lang))}}/></div>}
       <footer className="cc-status" role="contentinfo">
         <span className={`status-engine ${health?'connected':''}`}><i/>{t(health?'connected':'connecting')}</span>
         <span dir="ltr" className={totalSpeed>0?'live':''}><Icon name="down" size={13}/>{totalSpeed>0?`${bytes(totalSpeed)}/s`:L('Idle','خامل')}</span>

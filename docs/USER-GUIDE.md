@@ -4,7 +4,7 @@
 
 Close DropDL and run **DropDL-Setup.exe**. It installs or updates the app in `%LOCALAPPDATA%\Programs\DropDLStudio`, prepares Python, Node.js, FFmpeg/ffprobe, WebView2 and Python packages, and creates Desktop/Start Menu shortcuts. It is an **online prerequisite installer**: first-time setup needs internet. Some prerequisites may request administrator permission. Windows 10 1809+ or Windows 11, x64, is required.
 
-Alternatively, extract **DropDL-Studio-2.3.0.zip**, run **Setup-DropDL.bat**, then **Start-Desktop.bat**. Run setup once after upgrading the source package; normal launches do not reinstall dependencies. Download locations and user data remain outside the installation directory.
+Alternatively, extract **DropDL-Studio-3.0.0.zip**, run **Setup-DropDL.bat**, then **Start-Desktop.bat**. Run setup once after upgrading the source package; normal launches do not reinstall dependencies. Download locations and user data remain outside the installation directory.
 
 Shortcuts now point to the included **DropDL.exe launcher inside the app directory**, so “Open file location” opens the application folder. The native window uses the DropDL icon and Windows AppUserModelID. Apps & Features contains **DropDL Studio** with an uninstaller; uninstalling retains personal downloads and the app's user-data folder.
 
@@ -52,6 +52,30 @@ Choose a native destination folder as before. Website subfolders are optional. U
 
 Per-task speed limits and a global bandwidth budget are available in Preferences. Global bandwidth is conservatively divided across download slots when each task starts; changes apply to subsequently started tasks. It is not a live bandwidth allocator for existing downloads. Global queue pause blocks new tasks while current conversions continue to finish.
 
+## Connect (new in 3.0)
+
+Open **Connect** in the sidebar (or type *Connect* in the command palette).
+
+### Phone Link
+1. Turn on **Phone Link**. If Windows asks about the firewall, allow DropDL on **private networks**.
+2. Connect your phone to the same Wi-Fi as the PC and point its camera at the QR code. Or open the address shown under the code in the phone's browser and type the 8-character code.
+3. On the phone, paste or share a link and tap **Download on PC**. Progress appears on the phone and in the PC's Downloads list (marked *From a phone*).
+4. When it is ready, tap **Save to phone** or **Play**. The **Library** tab on the phone searches everything on the PC.
+
+From the PC, open a finished download and choose **Send to phone**; it waits on the phone under **Activity**.
+
+- **Address:** DropDL puts the Wi-Fi or Ethernet adapter that has the internet connection first. If the phone cannot connect, pick another address under the code (VPN adapters only work when the phone is on the same VPN).
+- **Away from home:** install [Tailscale](https://tailscale.com) on the PC and the phone; its address appears under the code.
+- **Security:** Phone Link is off until you switch it on, answers only devices on private networks, needs a one-time code (valid 10 minutes, rate limited) to pair, and gives each phone its own key. Remove a phone under **Paired phones**. Turning Phone Link off stops the phone server completely.
+- **Share sheet:** browsers only let a web page join the phone's share sheet over HTTPS. On plain Wi-Fi, copy the link in the YouTube app and paste it into DropDL; add the page to your home screen for one-tap access. On iPhone you can also make a Shortcut that opens `http://<pc address>/?url=` followed by the shared link.
+
+### YouTube account
+YouTube asks downloaders to sign in. Choose **Connect YouTube**, sign in in the window that opens, and DropDL saves the session and closes the window. Only youtube.com cookies are kept, in your DropDL profile on this PC. **Refresh session** re-reads it; **Disconnect** removes it (and signs the sign-in window out). If Google says the browser is not supported, export cookies.txt from your browser and use **Import cookies.txt** instead. A spare Google account is the safest choice for downloading.
+
+### Smart helpers
+- **Offer copied links:** copy a video link anywhere; DropDL offers to download it (a notification for known video and music sites when DropDL is in the background).
+- **Notify when downloads finish:** a Windows notification when DropDL is not the focused window. Click it to open the task.
+
 ## Subscriptions
 
 The Library/Convert workspace has optional playlist/channel subscriptions. Use the site's playlist URL or channel videos listing URL. Choose output mode, check interval, title keyword and optional maximum duration. Checks inspect up to the latest 100 entries and skip matching outputs already in the queue/library. Initial checks can queue existing matching entries; this is not a full historical archive or a guaranteed catch-up for more than 100 new uploads between checks. The app must remain open. Disable or remove a subscription at any time.
@@ -65,6 +89,8 @@ Load the included `browser-extension` folder in Chrome/Edge: Extensions → Deve
 This desktop release does not include a mobile PWA or multiple web-user accounts. Those belong to the separate web edition; importing that Docker project was deliberately avoided.
 
 ## Optional private cookies
+
+Since 3.0 the easiest way is **Connect → Connect YouTube** (above). Importing a cookies file still works:
 
 Import a Netscape-format cookie export through the native file picker in Library/Convert for media your own account can access. Cookies remain in the local user-data folder and are not packaged with releases. Remove the cookie file from the same panel when finished. Existing tasks snapshot its path; removing the file prevents subsequent use. Site login, availability, geography, rate limits and DRM can still prevent downloads. Cookie support does not bypass DRM.
 

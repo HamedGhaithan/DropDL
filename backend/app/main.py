@@ -65,11 +65,15 @@ async def lifespan(application):
         except OSError:logging.getLogger('dropdl.storage').exception('Temporary cleanup failed')
     from . import subscriptions
     subscriptions.start(sys.modules[__name__])
+    from . import phone_link
+    try:phone_link.start_if_enabled()
+    except Exception:logging.getLogger('dropdl.phone').exception('Phone Link could not start')
     from . import engine_update
     if os.name=="nt":engine_update.start()
     yield
     subscriptions.stop.set()
     engine_update.stop.set()
+    phone_link.shutdown()
     executor.close();editor.close()
     jobs.checkpoint_for_shutdown()
 
@@ -257,6 +261,8 @@ class SettingsRequest(BaseModel):
     auto_recover: bool = True
     auto_cleanup: bool = True
     keep_in_tray: bool = False
+    clipboard_watch: bool = True
+    notify_done: bool = True
     skip_duplicates: bool = False
     folder_rule: str = Field(default="none", pattern="^(none|creator|playlist|date|media_type)$")
     name_rule: str = Field(default="original", pattern="^(original|title|date_title)$")
@@ -606,6 +612,14 @@ app.include_router(browser_link.router)
 from . import support
 support.context=sys.modules[__name__]
 app.include_router(support.router)
+
+# 3.0: Phone Link and the built-in YouTube sign-in
+from . import phone_link
+phone_link.context=sys.modules[__name__]
+app.include_router(phone_link.router)
+from . import youtube_account
+youtube_account.context=sys.modules[__name__]
+app.include_router(youtube_account.router)
 
 @app.get('/api/engine-update')
 def engine_update_status():

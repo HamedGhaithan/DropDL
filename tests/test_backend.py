@@ -353,7 +353,7 @@ def test_desktop_bridge_exposes_only_explicit_functions(tmp_path):
     window,bridge=create_desktop_window(host,preferences,'http://127.0.0.1:17321')
     assert 'js_api' not in host.create_window.call_args.kwargs
     functions=window.expose.call_args.args
-    assert {f.__name__ for f in functions}=={'choose_folder','open_folder','choose_media_files','choose_cookies','open_downloaded','open_library','locate_media','reveal_library','launch_repair','open_editor','open_player','export_diagnostics','configure_tray'}
+    assert {f.__name__ for f in functions}=={'choose_folder','open_folder','choose_media_files','choose_cookies','open_downloaded','open_library','locate_media','reveal_library','launch_repair','open_editor','open_player','export_diagnostics','configure_tray','youtube_sign_in','youtube_refresh','youtube_disconnect','configure_clipboard','notify'}
     assert [name for name in vars(bridge) if not name.startswith('_')]==[]
     assert bridge._window is window
     assert desktop_icon().is_file()

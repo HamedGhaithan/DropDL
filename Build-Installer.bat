@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0"
 title DropDL Studio - Build installer
-echo === DropDL Studio 2.3.0 installer build ===
+echo === DropDL Studio 3.0.0 installer build ===
 where makensis >nul 2>nul
 if errorlevel 1 (
   if exist "%ProgramFiles(x86)%\NSIS\makensis.exe" (set "PATH=%ProgramFiles(x86)%\NSIS;%PATH%") else if exist "%ProgramFiles%\NSIS\makensis.exe" (set "PATH=%ProgramFiles%\NSIS;%PATH%") else (
