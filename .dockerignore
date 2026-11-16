@@ -1,0 +1,7 @@
+# The web image only needs web/server, web/static and web/requirements.txt.
+*
+!web/requirements.txt
+!web/server
+!web/static
+**/__pycache__
+**/*.pyc

@@ -1,0 +1,46 @@
+# DropDL Web on a small Linux server (for example Oracle Cloud "Always Free"). See README.md in this folder.
+#   cp .env.example .env   # set DOMAIN
+#   docker compose up -d --build
+services:
+  web:
+    build:
+      context: ../..
+      dockerfile: web/Dockerfile
+    restart: unless-stopped
+    environment:
+      TRUSTED_PROXY_HOPS: "1"          # Caddy is the only proxy in front
+      MAX_ACTIVE: "2"
+      ABUSE_CONTACT: "${ABUSE_CONTACT:-}"
+      ACCESS_CODE: "${ACCESS_CODE:-}"             # set it to make this instance private
+      YOUTUBE: "${YOUTUBE:-off}"
+      YTDLP_PROXY: "${YTDLP_PROXY:-}"
+    read_only: true
+    tmpfs: ["/tmp"]
+    volumes: ["data:/data"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 512
+    mem_limit: 3g
+    networks:
+      app:
+        ipv4_address: 172.30.0.10
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: "${DOMAIN:?set DOMAIN in .env}"
+    volumes: ["./Caddyfile:/etc/caddy/Caddyfile:ro", "caddy_data:/data"]
+    depends_on: ["web"]
+    networks: ["app"]
+
+networks:
+  app:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24          # harden.sh restricts what this subnet may reach
+
+volumes:
+  data: {}
+  caddy_data: {}
