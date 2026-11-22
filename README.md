@@ -77,6 +77,18 @@ The installer is not code-signed yet, so Windows SmartScreen may show **Unknown 
 
 The [user guide](docs/USER-GUIDE.md) covers every feature in detail, and the [changelog](CHANGELOG.md) lists what changed in each version.
 
+## Web version
+
+Prefer not to install anything? [`web/`](web/README.md) is a free, self-hostable browser version: paste a link, pick a format, download. It is deliberately modest (single videos, size limits, no YouTube by default) and locked down so it can run on a free host. One Docker image runs anywhere:
+
+```bash
+docker build -f web/Dockerfile -t dropdl-web . && docker run --rm -p 7860:7860 dropdl-web
+```
+
+Deploy guides for Render and Oracle Cloud's free tier are in [`web/README.md`](web/README.md).
+
+**YouTube on your phone:** YouTube blocks free hosts, so run it privately on your own PC instead. Double-click `Start-DropDL-Web.bat`, open the address it prints on your phone, and share YouTube links straight into it. Setup is in [YouTube on your phone](web/README.md#youtube-on-your-phone).
+
 ## Run from source
 
 You need **Python 3.12+**, **Node.js 22+** and **FFmpeg/ffprobe** on your `PATH`.
@@ -104,6 +116,8 @@ backend/            FastAPI server, download/convert/edit workers (Python)
 frontend/           React 19 + TypeScript interface (Vite)
   src/              App, editor, timeline, library, i18n (English/Arabic)
 browser-extension/  Chrome/Edge extension that sends links to the app
+web/                Free, self-hostable browser version (FastAPI + plain JS, Docker)
+deploy/             Hosting files (Oracle Cloud / any Linux server)
 installer/          NSIS scripts for the Windows setup and launcher
 scripts/            build, packaging and signing scripts
 tests/              pytest suites and Node UI/model checks

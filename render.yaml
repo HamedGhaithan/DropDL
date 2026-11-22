@@ -1,0 +1,29 @@
+# Render Blueprint for the free web version: https://render.com/docs/blueprint-spec
+# Render's free instances have 512 MB of RAM and sleep after 15 minutes without traffic, so the limits below are conservative.
+services:
+  - type: web
+    name: dropdl-web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./web/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: "off"
+    envVars:
+      - key: MAX_ACTIVE
+        value: "1"
+      - key: MAX_QUEUE
+        value: "8"
+      - key: MAX_HEIGHT
+        value: "720"
+      - key: MAX_FILESIZE_MB
+        value: "200"
+      - key: DISK_QUOTA_MB
+        value: "1024"
+      - key: ENGINE_UPDATE_HOURS
+        value: "12"
+      # How many reverse proxies sit in front of the app. Check it after deploying: see "Deploy on Render" in web/README.md.
+      - key: TRUSTED_PROXY_HOPS
+        value: "1"
+      # - key: DEBUG_CLIENT_IP     # set to 1 temporarily, open /api/whoami, then remove it
+      #   value: "1"
