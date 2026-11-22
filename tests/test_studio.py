@@ -486,7 +486,7 @@ def test_new_project_fields_are_validated(clips):
 
 def test_beats_are_found_in_music(tmp_path):
     clicks = tmp_path / 'clicks.wav'
-    ffmpeg('-f', 'lavfi', '-i', "aevalsrc='0.8*sin(2*PI*60*t)*exp(-30*mod(t,0.5))':s=44100:d=16", '-f', 'lavfi', '-i', 'anoisesrc=d=16:c=pink:a=0.02',
+    ffmpeg('-f', 'lavfi', '-i', "aevalsrc='0.8*sin(2*PI*60*t)*exp(-30*mod(t,0.5))':s=44100:d=16", '-f', 'lavfi', '-i', 'anoisesrc=d=16:c=pink:a=0.02:seed=7',
            '-filter_complex', 'amix=inputs=2', clicks)
     found = analysis.beats(clicks)
     assert found['bpm'] == pytest.approx(120, abs=1.5)

@@ -253,13 +253,20 @@ def track_beats(onset: list[float], period: float, rate: int = ENVELOPE_RATE, ti
     intervals = sorted(b - a for a, b in zip(found, found[1:]))
     median = intervals[len(intervals) // 2]
     steady = [i for i in intervals if abs(i - median) <= median * .25] or [median]   # ignore gaps and doubled beats
-    return round(60 * rate / (sum(steady) / len(steady)), 1), [round(i / rate, 3) for i in found]
+    beat = sum(steady) / len(steady)
+    # The very first frames have no earlier frame to rise from, so a beat right at the start is found a few frames
+    # late. Put the first beat back on the steady grid set by the beats after it.
+    if len(found) >= 3:
+        expected = found[1] - beat
+        if expected >= -beat * .1 and abs(found[0] - expected) <= beat * .2:
+            found[0] = max(0, int(round(expected)))
+    return round(60 * rate / beat, 1), [round(i / rate, 3) for i in found]
 
 
 def beats(path: str | Path, start: float = 0, end: float | None = None) -> dict:
     """{'bpm': tempo, 'beats': [seconds from `start`]} for the music in a file."""
     path = Path(path)
-    settings = {'start': round(start, 2), 'end': round(end, 2) if end else None, 'version': 3}
+    settings = {'start': round(start, 2), 'end': round(end, 2) if end else None, 'version': 4}
 
     def work():
         low, high = _envelopes(path, start, min(end, start + 1200) if end else start + 1200)
