@@ -16,7 +16,7 @@
 
 
 
-https://github.com/user-attachments/assets/2c28e6c3-20cd-4f47-83e3-a1ac002bb525
+<p align="center"><a href="https://github.com/HamedGhaithan/DropDL/releases/download/v3.0.0/DropDL-3.0-Flare-trailer.mp4"><img src="docs/media/trailer-poster.jpg" alt="Watch the DropDL 3.0 trailer" width="100%"></a><br><sub>▶ Watch the DropDL 3.0 trailer (60 s)</sub></p>
 
 
 
