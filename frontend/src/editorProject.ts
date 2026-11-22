@@ -1,7 +1,14 @@
-export type Segment={start:number;end:number;speed:number;source_job_id?:string;gain?:number;offset?:number;track?:number}
-export type TextCue={start:number;end:number;text:string;kind:'caption'|'title'}
+export type LookName='vivid'|'warm'|'cool'|'cinematic'|'punch'|'mono'|'noir'|'vintage'|'fade'|'dream'
+/** 3.0 adds per-clip look, fades (dissolving over lower tracks), opacity, picture-in-picture size and position, and sound cleanup. */
+export type Segment={start:number;end:number;speed:number;source_job_id?:string;gain?:number;offset?:number;track?:number;look?:LookName;fade_in?:number;fade_out?:number;opacity?:number;scale?:number;x?:number;y?:number;denoise?:boolean;voice?:boolean;motion?:MotionName;motion_amount?:number;focus_x?:number;focus_y?:number}
+export type MotionName='zoom-in'|'zoom-out'|'pan-left'|'pan-right'
+export type TitleAnimation='none'|'fade'|'slide'|'pop'|'typewriter'
+export type TitlePlace='top'|'center'|'bottom'|'lower'
+export type Marker={t:number;label:string}
+/** words: start time of each word (sequence seconds) for word-by-word caption styles. */
+export type TextCue={start:number;end:number;text:string;kind:'caption'|'title';words?:number[];animation?:TitleAnimation;position?:TitlePlace}
 export type TrackSettings={muted?:boolean;hidden?:boolean;locked?:boolean}
-export type EditProject={tracks?:TrackSettings[];segments:Segment[];texts?:TextCue[];soundtrack?:{source_job_id:string;start:number;offset:number;gain:number;muted?:boolean;locked?:boolean};export_preset?:string;audio_bitrate?:number;export_format?:string;fps?:number;height?:number;crf?:number;ratio:string;rotate:number;flip:boolean;brightness:number;contrast:number;saturation:number;volume:number;fadeIn:number;fadeOut:number}
+export type EditProject={tracks?:TrackSettings[];segments:Segment[];texts?:TextCue[];soundtrack?:{source_job_id:string;start:number;offset:number;gain:number;muted?:boolean;locked?:boolean};export_preset?:string;audio_bitrate?:number;export_format?:string;fps?:number;height?:number;crf?:number;fit?:'crop'|'blur'|'fit';encoder?:'auto'|'cpu';codec?:'h264'|'hevc';loudness?:number;target_mb?:number|null;caption_style?:'classic'|'bold'|'highlight'|'boxed'|'karaoke'|'pop';duck?:boolean;beats?:number[];bpm?:number;markers?:Marker[];ratio:string;rotate:number;flip:boolean;brightness:number;contrast:number;saturation:number;volume:number;fadeIn:number;fadeOut:number}
 export const trackState=(p:EditProject,lane:number):TrackSettings=>p.tracks?.[lane]||{}
 export const clipLocked=(p:EditProject,s:Segment)=>!!trackState(p,s.track||0).locked
 export const setTrack=(p:EditProject,lane:number,patch:TrackSettings):EditProject=>({...p,tracks:Array.from({length:Math.max(p.tracks?.length||3,lane+1)},(_,i)=>({...trackState(p,i),...(i===lane?patch:{})}))})
@@ -12,9 +19,9 @@ export const clipOffset=(p:EditProject,index:number)=>positioned(p).segments[ind
 export const outputDuration=(p:EditProject)=>Math.max(0,...positioned(p).segments.map(s=>s.offset!+clipLength(s)))
 export function splitSegment(p:EditProject,index:number,at:number):EditProject{const base=positioned(p),s=base.segments[index];if(!s||clipLocked(p,s)||at<=s.start+.05||at>=s.end-.05)return p;return {...base,segments:[...base.segments.slice(0,index),{...s,end:at},{...s,start:at,offset:s.offset!+(at-s.start)/s.speed},...base.segments.slice(index+1)]}}
 export const editorLabel=(lang:string,en:string,ar:string)=>lang==='ar'?ar:en
-export async function openEditor(id:string,lang:string){
- if(window.pywebview?.api.open_editor){if(!await window.pywebview.api.open_editor(id,lang))throw Error('The editor window could not open.');return}
- const link=new URL(location.href);link.search='';link.searchParams.set('editor',id);link.searchParams.set('lang',lang)
+export async function openEditor(id:string,lang:string,time=0){
+ if(window.pywebview?.api.open_editor){if(!await window.pywebview.api.open_editor(id,lang,time))throw Error('The editor window could not open.');return}
+ const link=new URL(location.href);link.search='';link.searchParams.set('editor',id);link.searchParams.set('lang',lang);if(time)link.searchParams.set('t',String(time))
  if(!window.open(link.toString(),'dropdl-editor-'+id,'popup,width=1440,height=940,resizable=yes'))throw Error(editorLabel(lang,'Allow the editor popup to open.','اسمح بفتح نافذة المحرر.'))
 }
 

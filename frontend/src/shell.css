@@ -9,7 +9,7 @@ body{overflow:hidden}
 
 /* ---------------------------------------------------------------- rail */
 .cc-rail{display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px 8px 12px;background:var(--sidebar);border-inline-end:1px solid var(--border);overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
-.rail-logo{width:40px;height:40px;border-radius:12px;overflow:hidden;margin-bottom:14px;flex-shrink:0;box-shadow:0 10px 24px -12px #3a86ff}
+.rail-logo{width:40px;height:40px;border-radius:12px;overflow:hidden;margin-bottom:14px;flex-shrink:0;box-shadow:0 10px 24px -12px #ff3d77}
 .rail-logo svg{width:40px;height:40px;display:block}
 .cc-rail .workspace-nav{display:flex;flex-direction:column;gap:2px;align-items:center}
 .rail-item{all:unset;box-sizing:border-box;width:68px;display:flex!important;flex-direction:column;align-items:center;gap:4px;padding:6px 0 7px;border-radius:12px;color:var(--muted);cursor:pointer;text-align:center;transition:color .15s}

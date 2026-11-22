@@ -2,9 +2,107 @@
 
 All notable changes to DropDL Studio. The newest release is at the top.
 
-## 3.0.0 — DropDL everywhere
+## 3.0.0 — a new Clip Studio, and DropDL everywhere
 
-DropDL now reaches beyond the PC. A new **Connect** section brings together everything that links DropDL to the rest of your life: your phone, your YouTube account, your clipboard and your browser.
+DropDL 3.0 turns the editor into a studio of its own and reaches beyond the PC. **Clip Studio** now opens with no clips at all, keeps real projects, and does the slow parts of editing for you: it cuts silences, finds scene changes, edits by transcript, writes captions, and exports for any screen on your graphics card. A new **Connect** section links DropDL to your phone, your YouTube account, your clipboard and your browser.
+
+### A new look and a new logo
+- **The Flare logo.** A downward fast-forward over a landing bar, on a tile that glows from coral through pink to violet. It is the new app and taskbar icon, the installer icon, the phone app's home-screen icon (with a full-bleed version for Android) and the browser extension's icon.
+- **The "Ink" palette.** Deeper, neutral darks and a soft lilac-white light theme. The sidebar now sits on the window frame and the workspace floats beside it as one rounded panel.
+- **Seven accent colours:** Ultraviolet (the new default), Flare, Aurora, Mint, Rose, Amber and Ocean. If you used the old default you move to Ultraviolet once; a colour you picked yourself is kept. Text on accent buttons switches between white and dark to stay readable.
+- **Redrawn throughout:**
+  - the header shows the DropDL Studio wordmark;
+  - the current section is marked with a gradient tile and bar;
+  - filter chips, task cards, the inspector, dialogs, the command palette, notifications and What's new are redrawn with softer corners and glass surfaces;
+  - Library filters are now labelled pills, and every dropdown has the same arrow, also in Arabic.
+- **Editor:** coral timecode, a pink playhead and a gradient Export button.
+- **Phone app and browser extension** use the same colours and logo.
+- Fixed: the Library's website filter said "All media" instead of "All websites".
+
+### Clip Studio: projects that start from nothing
+- **New project, with no clip needed.** A dedicated **New project** button sits in the header of the main window (also **Ctrl+Shift+N** and the command palette). It opens an empty timeline in its own window, ready for media from your downloads, your PC or a link.
+- **Studio home.** The Studio tab is now a home for your work:
+  - one-click projects in Landscape, Vertical, Square or Portrait;
+  - **Start from files on this PC**;
+  - **Download & edit**: paste a link and the project opens the moment the download finishes;
+  - **recent projects** with a poster frame, length, shape and last edit, plus Rename, Duplicate and Delete (your media files are never deleted).
+- **Projects save themselves** as you edit, with the same 30-step recovery history as before. A project whose files were cleared from the task list re-links them on its own, and reports any file that was moved or deleted.
+- **Rename a project in place** by clicking its name in the editor header. Exports are named after the project.
+- The empty editor shows **Import files** and **Open media bin**, and the timeline shows a drop zone. Every item in the media bin has an **Add** button that puts it at the end of the timeline.
+- Right-click any finished download or library file and choose **Open as a new Clip Studio project**.
+
+### Smart tools (a new panel next to Effect Controls)
+- **Remove silences.** Finds the pauses in a clip (you choose how quiet and how long, plus breathing room so words are never clipped), shows them on a bar with the time saved, and cuts them in one undoable step. Later clips and captions move up to close the gaps.
+- **Split at scene changes.** Detects every cut to a new shot and splits the clip there, ready to drop or reorder shots.
+- **One-click formats:**
+  - Shorts, Reels and TikTok (9:16 with a blurred background);
+  - Instagram feed (4:5);
+  - Square;
+  - YouTube 16:9;
+  - the original frame.
+- **Transitions:**
+  - **Cross dissolve** overlaps a clip with the one before it;
+  - **Dip to black**;
+  - per-clip fade in and fade out. On a higher track a fade dissolves into the clips below.
+- **Even loudness.** Exports can reach −14 LUFS (streaming), −16 (podcasts) or −23 (broadcast) with EBU R128 normalization.
+- All of it runs on your PC with FFmpeg. Nothing is uploaded and no AI model is involved.
+
+### Music, motion and titles
+- **Find the beat.** DropDL measures the tempo of your soundtrack (or of a clip) and marks every beat on the timeline. Edge snapping catches beats, so cuts land on the music.
+  - Tempo comes from FFmpeg band energy and autocorrelation.
+  - Beats are then tracked with dynamic programming (the Ellis method), so they stay steady through quiet parts.
+  - On a 110 BPM drum loop it reports 110 BPM, with beats within 20 ms.
+- **Cut to the beat.** One click re-times the clips on V1 so each lasts 1, 2 or 4 beats, or the nearest beat to its current length. Clips may grow into unused source.
+- **Duck the music while clips speak.** The soundtrack dips automatically under voices (sidechain compression at export, and live in the preview).
+- **Ken Burns motion** per clip: zoom in, zoom out, pan left or pan right, with adjustable strength, previewed live.
+- **Keep in frame.** When a wide shot is cropped to a vertical or square frame, choose which part stays (left to right, top to bottom).
+- **Animated titles:**
+  - Pop, Slide, Fade or Typewriter entrances;
+  - top, centre, bottom or lower-third placement;
+  - added at the playhead from Smart tools.
+- **Word-by-word captions.** Two new caption styles follow the speech one word at a time:
+  - **Karaoke**: words fill with colour as they are said;
+  - **Pop**: the spoken word grows and lights up.
+
+  YouTube's automatic captions carry real word timings, and DropDL keeps them. Other captions share the time out by word length. The preview matches the export.
+- **Markers and chapters.** Press **M** to drop a marker; rename markers in Smart tools. Markers become real chapters in MP4, MOV and M4A exports, and **Copy YouTube chapters** puts a ready-to-paste chapter list (starting at 0:00) on the clipboard.
+- **Templates** on the Studio home:
+  - Podcast clip;
+  - Captioned short;
+  - Music video;
+  - Tutorial.
+
+  Each starts a project with the right shape, captions, loudness and ducking.
+- **What's new.** A one-time showcase of DropDL 3.0 after the update, also in the command palette.
+
+### Transcript: edit by text
+- **Get the words of a clip:**
+  - from the video page's captions or automatic captions (YouTube and many other sites; only the caption text is fetched, using your YouTube sign-in);
+  - from subtitles saved with the download;
+  - from an imported .srt or .vtt file.
+- **Click any line to jump to it.** The line being spoken is highlighted while the clip plays. Search the words, or show only the lines inside the clip.
+- **Cut by text.** Tick lines (Shift for a range), then **Cut these lines** or **Keep only these**. The video is cut to match.
+- **Auto captions.** **Add captions to this clip** turns the transcript into timed captions, optionally as short phrases for vertical video. They have four burned-in styles: Classic, Bold, Highlight and Boxed.
+- **Save the transcript** as .srt or plain text.
+- **Search inside your videos** from the Studio home: find a sentence in any video with a transcript, and open the video at that moment.
+- YouTube's rolling automatic captions, which repeat every line, are merged into clean sentences.
+
+### Looks, frame and sound
+- **Ten looks per clip:** Vivid, Warm, Cool, Cinematic, Punch, Mono, Noir, Vintage, Faded and Dream. They are previewed on the clip's own picture and can be applied to every clip in one click. The editor preview uses the same colour matrices as the export, so what you see is what you get.
+- **Picture in picture.** Size, position (with one-click corners) and opacity per clip. The preview now composites every visible layer live, so overlays, dissolves and transparency show as they will export.
+- **Frame fill** for the whole sequence: crop to fill, **blurred background**, or fit with bars. There is a new 4:5 shape.
+- **Sound cleanup** per clip: reduce background noise, and voice clarity (EQ and compression).
+- **Snapshot** saves the frame you see as a PNG.
+
+### Export
+- **Destination presets:** YouTube 1080p and 4K, Shorts/Reels/TikTok, Instagram feed, Square, under 25 MB (email), under 10 MB (chat apps), animated GIF, ProRes master, MP3, M4A and WAV.
+- **GPU encoding.** DropDL proves which graphics encoders actually work on your PC (NVIDIA NVENC, AMD AMF, Intel Quick Sync) with a one-second test and remembers the result. Settings were matched to x264 with VMAF on 1080p footage. On an RTX 3070 Ti, NVENC gave the same quality and file size about **three times faster**. If the graphics card refuses a job, the export finishes on the processor automatically.
+- **H.265 / HEVC** for smaller files, **fit under a file size**, and **animated GIF** (palette-optimized, loops, up to 640 px).
+- Exports run at below-normal priority on more cores, so the desktop stays smooth.
+
+### Downloads
+- **Also save each chapter as its own file.** Videos with chapters (albums, courses, podcasts) can be split into one file per chapter, in a folder beside the full download.
+- Subtitles downloaded with a video become its transcript in Clip Studio automatically.
 
 ### Phone Link
 - **Use your phone as a remote for DropDL.** Turn on Phone Link, scan the QR code with your phone's camera, and the phone opens a fast, installable DropDL page.
@@ -29,6 +127,7 @@ DropDL now reaches beyond the PC. A new **Connect** section brings together ever
 - The browser extension inbox and playlist/channel subscriptions moved to Connect, where they are easier to find.
 - Uploaders whose name is an email address (some archive.org items) are no longer shown, on the PC or the phone.
 - New command-palette entry: **Connect**.
+- Fixed: choosing **Download** on a copied-link notification (or any DropDL notification) could freeze the whole window. Actions from notifications and the YouTube sign-in window now run without blocking the interface.
 
 ## 2.3.0 — a professional editing workspace
 

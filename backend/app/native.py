@@ -164,7 +164,8 @@ class NativeAPI:
         else: subprocess.Popen(['xdg-open', str(folder)])
         return True
 
-    def open_editor(self, job_id, language='en'):
+    def open_editor(self, job_id, language='en', time=0):
+        import math
         from urllib.parse import urlsplit,urlunsplit,urlencode
         record=self._job_lookup(job_id) if self._job_lookup else None
         if not self._job_lookup:
@@ -181,7 +182,11 @@ class NativeAPI:
             previous.show();return True
         base=urlsplit(self._window.get_current_url())
         if base.hostname not in ('127.0.0.1','localhost'):raise ValueError('The editor requires the local desktop server.')
-        url=urlunsplit((base.scheme,base.netloc,'/',urlencode({'editor':job_id,'lang':language}),''))
+        try:time=float(time)
+        except (TypeError,ValueError):time=0
+        query={'editor':job_id,'lang':language}
+        if math.isfinite(time) and time>0:query['t']=f'{time:.2f}'
+        url=urlunsplit((base.scheme,base.netloc,'/',urlencode(query),''))
         child=webview.create_window('DropDL Clip Studio',url,width=1440,height=960,min_size=(1000,720))
         bridge=NativeAPI(self._settings,self._job_lookup);bridge._window=child
         child.expose(bridge.open_downloaded,bridge.open_library,bridge.open_folder,bridge.close_editor,bridge.choose_media_files,bridge.export_diagnostics,bridge.choose_export_folder)
@@ -189,6 +194,35 @@ class NativeAPI:
         child.events.shown += lambda: apply_windows_icon(child)
         child.events.closed += lambda: editors.pop(job_id,None)
         editors[job_id]=child;self._editors=editors
+        return True
+
+    def open_project(self, project_id, language='en', time=0):
+        """Open a Clip Studio project (it may be empty) in its own editor window; one window per project."""
+        import math,re
+        from urllib.parse import urlsplit,urlunsplit,urlencode
+        # Checked here, not by importing the studio module: the GUI process must not load the task store.
+        if not isinstance(project_id,str) or not re.fullmatch(r'p[0-9a-f]{20}',project_id):raise ValueError('Invalid project.')
+        if language not in ('en','ar'):raise ValueError('Unsupported language.')
+        try:time=float(time)
+        except (TypeError,ValueError):time=0
+        if not math.isfinite(time) or time<0:time=0
+        import webview
+        from .desktop_host import apply_windows_icon
+        editors=getattr(self,'_editors',{});key='project:'+project_id
+        previous=editors.get(key)
+        if previous:
+            previous.show();return True
+        base=urlsplit(self._window.get_current_url())
+        if base.hostname not in ('127.0.0.1','localhost'):raise ValueError('The editor requires the local desktop server.')
+        query={'project':project_id,'lang':language}
+        if time:query['t']=f'{time:.2f}'
+        child=webview.create_window('DropDL Clip Studio',urlunsplit((base.scheme,base.netloc,'/',urlencode(query),'')),width=1440,height=960,min_size=(1000,720))
+        bridge=NativeAPI(self._settings,self._job_lookup);bridge._window=child
+        child.expose(bridge.open_downloaded,bridge.open_library,bridge.open_folder,bridge.close_editor,bridge.choose_media_files,bridge.export_diagnostics,bridge.choose_export_folder)
+        child.events.loaded += bridge.bind_editor_drops
+        child.events.shown += lambda: apply_windows_icon(child)
+        child.events.closed += lambda: editors.pop(key,None)
+        editors[key]=child;self._editors=editors
         return True
 
     def open_player(self, media_key, language='en', position=0, rate=1):

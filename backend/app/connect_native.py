@@ -16,6 +16,20 @@ import time
 from urllib.parse import urlparse
 
 log = logging.getLogger('dropdl.connect')
+
+
+def run_js(window, script: str, what: str = 'update the interface') -> None:
+    """Run a script in the page without blocking the caller.
+
+    pywebview's evaluate_js marshals the script onto the window's UI thread and then waits for the result there.
+    Called from a UI-thread event (a notification click, a window event) that wait can never finish and the whole
+    window stops responding, so the call always happens on a short-lived worker thread."""
+    def go():
+        try:
+            window.evaluate_js(script)
+        except Exception:                              # noqa: BLE001 - the window may be closing
+            log.exception('Could not %s', what)
+    threading.Thread(target=go, daemon=True, name='run-js').start()
 YOUTUBE_URI = 'https://www.youtube.com/'
 GOOGLE_URIS = ('https://accounts.google.com/', 'https://www.google.com/')
 AUTH_NAMES = {'LOGIN_INFO', 'SAPISID', '__Secure-1PAPISID', '__Secure-3PAPISID', '__Secure-1PSID', '__Secure-3PSID', 'SID'}
@@ -114,10 +128,7 @@ class YouTubeAccount:
         self.lock = threading.Lock()
 
     def _tell_interface(self, payload: dict):
-        try:
-            self.main.evaluate_js(f"window.dispatchEvent(new CustomEvent('dropdl:youtube',{{detail:{json.dumps(payload)}}}))")
-        except Exception:                              # noqa: BLE001 - the main window may be closing
-            log.exception('Could not update the interface')
+        run_js(self.main, f"window.dispatchEvent(new CustomEvent('dropdl:youtube',{{detail:{json.dumps(payload)}}}))")
 
     def _upload(self, cookies: list[dict]) -> dict:
         youtube = [c for c in cookies if c['domain'].lstrip('.').endswith('youtube.com')]
@@ -283,10 +294,7 @@ class LinkCatcher:
                                    (f'{host}: انقر لتنزيله باستخدام DropDL.' if ar else f'{host} · Click to download it with DropDL.'), script)
 
     def _eval(self, script):
-        try:
-            self.main.evaluate_js(script)
-        except Exception:                              # noqa: BLE001
-            log.exception('Could not reach the interface')
+        run_js(self.main, script, 'reach the interface')
 
 
 # ---------------------------------------------------------------- notifications
@@ -321,11 +329,8 @@ class Notifier:
                 native.Activate()
         except Exception:                              # noqa: BLE001
             log.exception('Could not bring DropDL to the front')
-        if script:
-            try:
-                self.main.evaluate_js(script)
-            except Exception:                          # noqa: BLE001
-                log.exception('Could not run the notification action')
+        if script:                                     # this handler runs on the UI thread: never wait here
+            run_js(self.main, script, 'run the notification action')
 
     def _hide_helper(self, *_):
         if self.helper is not None and not (self.tray and self.tray.icon is self.helper):

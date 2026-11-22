@@ -2,8 +2,8 @@
 .connect{display:grid;gap:18px;padding:4px 2px 28px;max-width:1240px;margin:0 auto;width:100%}
 .connect-hero{position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;padding:26px 28px;border-radius:var(--radius-xl);
   border:1px solid var(--border);background:
-  radial-gradient(120% 140% at 0% 0%,color-mix(in srgb,#2FE3C2 22%,transparent),transparent 55%),
-  radial-gradient(90% 140% at 100% 0%,color-mix(in srgb,#7A55FF 26%,transparent),transparent 60%),var(--surface)}
+  radial-gradient(120% 140% at 0% 0%,color-mix(in srgb,#FF8A4C 22%,transparent),transparent 55%),
+  radial-gradient(90% 140% at 100% 0%,color-mix(in srgb,#7A4DFF 26%,transparent),transparent 60%),var(--surface)}
 .connect-hero h2{margin:6px 0 6px;font-size:28px;letter-spacing:-.03em;line-height:1.1}
 .connect-hero p{margin:0;color:var(--muted);max-width:620px;font-size:14.5px;line-height:1.5}
 .connect .eyebrow{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
@@ -19,7 +19,7 @@
 .card-head h3{margin:2px 0 4px;font-size:17px;letter-spacing:-.01em}
 .card-head p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.5}
 .card-icon{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:#fff;box-shadow:0 8px 20px -10px rgb(0 0 0/.6)}
-.card-icon.gradient{background:linear-gradient(135deg,#2FE3C2,#3A86FF 55%,#7A55FF)}
+.card-icon.gradient{background:linear-gradient(135deg,#FF8A4C,#FF3D77 55%,#7A4DFF)}
 .card-icon.red{background:linear-gradient(135deg,#ff6b6b,#e0245e)}
 .card-icon.violet{background:linear-gradient(135deg,#9b7bff,#5b3ef0)}
 .card-icon.blue{background:linear-gradient(135deg,#4aa3ff,#2563eb)}
@@ -109,4 +109,4 @@
 
 /* task cards: downloads started from a phone */
 .origin-badge{display:inline-flex;align-items:center;gap:4px;margin-inline-end:8px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:650;vertical-align:1px;
-  color:color-mix(in srgb,#7A55FF 80%,var(--text));background:color-mix(in srgb,#7A55FF 14%,transparent);border:1px solid color-mix(in srgb,#7A55FF 35%,transparent)}
+  color:color-mix(in srgb,#7A4DFF 80%,var(--text));background:color-mix(in srgb,#7A4DFF 14%,transparent);border:1px solid color-mix(in srgb,#7A4DFF 35%,transparent)}

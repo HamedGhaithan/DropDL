@@ -49,7 +49,7 @@ CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTVWXYZ23456789'  # no 0/O, 1/I/L or U: easy to 
 CODE_TTL = 600
 MAX_DEVICES = 12
 MAX_INBOX = 40
-STATIC_FILES = {'index.html', 'app.js', 'style.css', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png',
+STATIC_FILES = {'index.html', 'app.js', 'style.css', 'manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png',
                 'logo.svg', 'inter.woff2', 'plex-arabic.woff2'}
 
 

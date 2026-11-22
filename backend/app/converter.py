@@ -103,30 +103,47 @@ def run_conversion(job):
         if options.get('edit'):
             from .editor import timeline_duration
             duration=timeline_duration(options['edit']['segments'])
-        with (directory/'conversion.log').open('w+b') as errors:
-            process=subprocess.Popen(command,stdout=subprocess.PIPE,stderr=errors,text=True,creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
-            # A monitor terminates silent FFmpeg processes as soon as cancellation is requested.
-            from threading import Thread
-            def watch():
-                while process.poll() is None:
-                    if job.cancel_event.wait(.15):
-                        process.terminate()
-                        try:process.wait(timeout=3)
-                        except subprocess.TimeoutExpired:process.kill()
-                        return
-            Thread(target=watch,daemon=True).start()
-            for line in process.stdout:
-                if line.startswith('out_time_us='):
-                    try:done=float(line.split('=',1)[1])/1e6
-                    except ValueError:continue
-                    elapsed=time.monotonic()-began;percent=min(99,done/max(.1,duration)*100)
-                    jobs.update_attempt(job,percent=round(percent,1),eta=int(max(0,duration-done)*elapsed/done) if done>0 else None)
-            process.wait()
-            if job.cancel_event.is_set():raise DownloadCancelled()
-            if process.returncode:
-                errors.seek(0);raise RuntimeError('Conversion failed: '+errors.read().decode(errors='replace')[-2000:])
+        def execute(command):
+            nonlocal process
+            with (directory/'conversion.log').open('w+b') as errors:
+                # Below-normal priority: exports may use many cores while the desktop stays responsive.
+                flags=(subprocess.CREATE_NO_WINDOW|getattr(subprocess,'BELOW_NORMAL_PRIORITY_CLASS',0)) if os.name=='nt' else 0
+                process=subprocess.Popen(command,stdout=subprocess.PIPE,stderr=errors,text=True,creationflags=flags)
+                # A monitor terminates silent FFmpeg processes as soon as cancellation is requested.
+                from threading import Thread
+                def watch(current=process):
+                    while current.poll() is None:
+                        if job.cancel_event.wait(.15):
+                            current.terminate()
+                            try:current.wait(timeout=3)
+                            except subprocess.TimeoutExpired:current.kill()
+                            return
+                Thread(target=watch,daemon=True).start()
+                for line in process.stdout:
+                    if line.startswith('out_time_us='):
+                        try:done=float(line.split('=',1)[1])/1e6
+                        except ValueError:continue
+                        elapsed=time.monotonic()-began;percent=min(99,done/max(.1,duration)*100)
+                        jobs.update_attempt(job,percent=round(percent,1),eta=int(max(0,duration-done)*elapsed/done) if done>0 else None)
+                process.wait()
+                errors.seek(0);return process.returncode,errors.read().decode(errors='replace')
+        code,log=execute(command)
+        if code and not job.cancel_event.is_set() and options.get('edit') and options['edit'].get('encoder')!='cpu':
+            from .hardware import is_hardware
+            if any(is_hardware(part) for part in command):
+                # A graphics driver can refuse a session the probe allowed (busy GPU, driver update): use the CPU.
+                options={**options,'edit':{**options['edit'],'encoder':'cpu'}};command=build_command(source,temporary,options,metadata)
+                jobs.update_attempt(job,percent=0,eta=None);began=time.monotonic()
+                code,log=execute(command)
+        if job.cancel_event.is_set():raise DownloadCancelled()
+        if code:raise RuntimeError('Conversion failed: '+log[-2000:])
         destination=Path(job.destination or directory);destination.mkdir(parents=True,exist_ok=True)
-        final=destination/(source.stem[:130]+' ['+job.id[:8]+(' sample' if options.get('sample') else ' edited' if options.get('edit') else ' converted')+'].'+job.container)
+        stem=source.stem
+        if (options.get('edit') or {}).get('_name'):
+            # Studio projects are named by the user; never let a name become a path or a reserved character.
+            import re
+            stem=re.sub(r'[<>:"/\\|?*\x00-\x1f]','',options['edit']['_name']).strip(' .') or stem
+        final=destination/(stem[:130]+' ['+job.id[:8]+(' sample' if options.get('sample') else ' edited' if options.get('edit') else ' converted')+'].'+job.container)
         if final.resolve()==source.resolve() or final.exists():raise ValueError('Output path already exists; the original is preserved.')
         shutil.move(str(temporary),str(final))
         preview=None
@@ -141,3 +158,4 @@ def run_conversion(job):
         temporary.unlink(missing_ok=True)
         temporary.with_suffix('.filters.txt').unlink(missing_ok=True)
         temporary.with_suffix('.captions.ass').unlink(missing_ok=True)
+        temporary.with_suffix('.chapters.txt').unlink(missing_ok=True)

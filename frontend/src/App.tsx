@@ -1,4 +1,5 @@
-import {DARK_ACCENTS,LIGHT_ACCENTS,DEFAULT_ACCENT} from './theme'
+import {DARK_ACCENTS,LIGHT_ACCENTS,DEFAULT_ACCENT,migrateAccent,onAccent} from './theme'
+migrateAccent()
 import {taskPhase,taskAdvice} from './reliability'
 import EngineUpdate from './EngineUpdate'
 import ClipTimeInput,{clipClock} from './ClipTimeInput'
@@ -7,7 +8,7 @@ import { API_BASE, archiveUrl, cancelDownload, createBatch, createClip, download
 import DownloadExtras, {useDownloadExtras} from './DownloadExtras'
 import NetworkPanel, {proxyValid} from './NetworkPanel'
 import {Language, TextKey, translate} from './i18n'
-import {Logo, Icon} from './visuals'
+import {Logo,Wordmark, Icon} from './visuals'
 import RightClickLayer from './RightClickLayer'
 import {openEditor} from './editorProject'
 import {AppearancePanel,designText} from './StudioDesign'
@@ -15,6 +16,9 @@ import Tour from './Tour'
 import ClipTimeline from './ClipTimeline'
 import Workspace,{WorkspaceTab,workText} from './Workspace'
 import Connect from './Connect'
+import StudioHome from './StudioHome'
+import WhatsNew from './WhatsNew'
+import {createProject,openStudioProject} from './studioApi'
 import {QueueTools,PriorityControls,qText} from './QueueTools'
 import {pauseDownload,reorderQueue,queueControl,sendToPhone} from './api'
 import {Confetti,ClipToast,Count,OverallBar,exportCsv,useClipboardWatch,useSpotlight,useSystemFeedback,ux2} from './upgrade2'
@@ -76,6 +80,7 @@ export default function App() {
   const [preferences,setPreferences] = useState<Preferences|null>(null)
   const [limit,setLimit] = useState('0')
   const [tour,setTour] = useState(() => readPreference('dropdl-tour-v1','') ? -1 : 0)
+  const [whatsNew,setWhatsNew] = useState(() => !!readPreference('dropdl-tour-v1','') && readPreference('dropdl-whats-new','') !== '3.0.0')
   const modal = useRef<HTMLDivElement>(null)
   const [theme, setTheme] = useState(() => readPreference('dropdl-theme','dark') === 'light' ? 'light' : 'dark')
   const [accent, setAccent] = useState<Accent>(() => {const a=readPreference('dropdl-accent',DEFAULT_ACCENT); return a in accents ? a as Accent : DEFAULT_ACCENT})
@@ -140,7 +145,7 @@ export default function App() {
   useEffect(() => {void getPreferences().then(p=>{setPreferences(p);setLimit(String(p.speed_limit_kbps));setGlobalLimit(String(p.global_speed_limit_kbps||0));setDuplicateSkip(p.skip_duplicates===true)}).catch(()=>{})},[])
   useEffect(() => {
     const keys = (e:KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='n') {e.preventDefault();setComposer(true)}
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='n') {e.preventDefault();if(e.shiftKey)window.dispatchEvent(new Event('dropdl-new-project'));else setComposer(true)}
       if(e.key==='Escape' && tour < 0) {setComposer(false);setSettingsOpen(false)}
       const target=e.target as HTMLElement|null
       const typing=!!target&&(['INPUT','TEXTAREA','SELECT'].includes(target.tagName)||target.isContentEditable)
@@ -166,7 +171,9 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    document.documentElement.style.setProperty('--accent', (theme==='light'?lightAccents:accents)[accent])
+    const color=(theme==='light'?lightAccents:accents)[accent]
+    document.documentElement.style.setProperty('--accent', color)
+    document.documentElement.style.setProperty('--on-accent', onAccent(color))
     document.documentElement.style.colorScheme = theme
     try {localStorage.setItem('dropdl-theme', theme); localStorage.setItem('dropdl-accent', accent)} catch { /* Preferences remain usable in this session. */ }
   }, [theme, accent])
@@ -354,7 +361,10 @@ export default function App() {
   const pageJobs=filtered.slice(page*100,(page+1)*100)
   const detail=downloadJobs.find(j=>j.id===detailId)
   const statusText=(status:string)=>['paused','pausing','converting'].includes(status)?qText(lang,status as 'paused'|'pausing'|'converting'):t(({queued:'taskQueued',starting:'taskStarting',downloading:'taskDownloading',processing:'taskProcessing',clipping:'taskClipping',preparing_preview:'taskPreparing',completed:'completed',failed:'taskFailed',cancelled:'taskCancelled',cancelling:'taskCancelling'} as Record<string,TextKey>)[status]||'taskQueued')
-  function finishTour(){setTour(-1);setComposer(false);try{localStorage.setItem('dropdl-tour-v1','done')}catch{};document.getElementById('tour-add')?.focus()}
+  function closeWhatsNew(){setWhatsNew(false);try{localStorage.setItem('dropdl-whats-new','3.0.0')}catch{}}
+  // The showcase never sits on top of real work: opening a download, Preferences or the palette dismisses it for good.
+  useEffect(()=>{if(whatsNew&&(composer||settingsOpen||palette))closeWhatsNew()},[composer,settingsOpen,palette])
+  function finishTour(){setTour(-1);setComposer(false);try{localStorage.setItem('dropdl-tour-v1','done');localStorage.setItem('dropdl-whats-new','3.0.0')}catch{};document.getElementById('tour-add')?.focus()}
   function moveTour(step:number){setWorkspace('downloads');setComposer(step>0&&step<5);setSettingsOpen(false);setTour(step)}
   async function chooseFolder(){await act('Folder',async()=>{if(!window.pywebview?.api)throw Error(t('folderFail'));const p=await window.pywebview.api.choose_folder();if(p){setPreferences(p);setLimit(String(p.speed_limit_kbps))}})}
   async function setGrouping(enabled:boolean){if(!preferences)return;await act('Preferences',async()=>setPreferences(await savePreferences({...preferences,group_by_site:enabled})))}
@@ -386,6 +396,8 @@ export default function App() {
   const dragging=useUrlIntake(intake,tour<0&&!palette)
   async function copyLinks(list:Job[]){await act('Copy',async()=>{await navigator.clipboard.writeText(list.map(j=>j.url).join('\n'));setQueueMessage(`${list.length} ${ux(lang,'copiedLinks')}`)})}
   const L=(en:string,ar:string)=>lang==='ar'?ar:en
+  async function newStudioProject(aspect='16:9'){try{const record=await createProject({aspect});await openStudioProject(record.id,lang);window.dispatchEvent(new Event('dropdl-studio-changed'))}catch(e){setError(String(e instanceof Error?e.message:e))}}
+  useEffect(()=>{const create=()=>void newStudioProject();window.addEventListener('dropdl-new-project',create);return()=>window.removeEventListener('dropdl-new-project',create)},[lang])
   const selectedJobs=downloadJobs.filter(j=>taskSelection.has(j.id))
   const commands:Command[]=[
     {id:'new',group:'group_actions',icon:'plus',label:t('newDownload'),hint:'Ctrl N',keywords:'add url link download',run:()=>{setWorkspace('downloads');setSettingsOpen(false);setComposer(true)}},
@@ -398,6 +410,9 @@ export default function App() {
     ...(preferences?.native_folder_picker?[{id:'folder',group:'group_actions' as const,icon:'folder',label:L('Open download folder','فتح مجلد التنزيل'),keywords:'explorer directory',run:()=>void openFolder()}]:[]),
     ...['all','active','completed','attention','video','audio'].map(v=>({id:`view-${v}`,group:'group_navigate' as const,icon:v,label:t(v as TextKey),keywords:'queue list',run:()=>{setWorkspace('downloads');setView(v)}})),
     ...(['convert','studio','library'] as const).map(section=>({id:`tool-${section}`,group:'group_navigate' as const,icon:section==='library'?'folder':section==='convert'?'convert':'scissors',label:workText(lang,section),keywords:'tool workspace',run:()=>{setComposer(false);setSettingsOpen(false);setWorkspace(section)}})),
+    {id:'whats-new',group:'group_navigate',icon:'bolt',label:L("What's new in DropDL 3.0",'الجديد في DropDL 3.0'),keywords:'release notes changes features update',run:()=>setWhatsNew(true)},
+    {id:'new-project',group:'group_actions',icon:'scissors',label:L('New Clip Studio project','مشروع جديد في استوديو القص'),keywords:'edit editor video create empty blank studio clip montage ctrl shift n',run:()=>void newStudioProject()},
+    {id:'new-vertical',group:'group_actions',icon:'scissors',label:L('New vertical project (Shorts, Reels, TikTok)','مشروع عمودي جديد (شورتس، ريلز، تيك توك)'),keywords:'edit 9:16 portrait reel short tiktok',run:()=>void newStudioProject('9:16')},
     {id:'tool-connect',group:'group_navigate',icon:'phone',label:workText(lang,'connect'),keywords:'phone link mobile youtube sign in cookies clipboard notifications extension subscriptions',run:()=>{setComposer(false);setSettingsOpen(false);setWorkspace('connect')}},
     {id:'prefs',group:'group_navigate',icon:'settings',label:t('preferences'),keywords:'settings options',run:()=>{setComposer(false);setSettingsOpen(true)}},
     {id:'theme',group:'group_appearance',icon:theme==='dark'?'sun':'moon',label:theme==='dark'?L('Switch to light theme','التبديل إلى السمة الفاتحة'):L('Switch to dark theme','التبديل إلى السمة الداكنة'),keywords:'appearance mode',run:()=>setTheme(theme==='dark'?'light':'dark')},
@@ -476,13 +491,13 @@ export default function App() {
     </nav>
     <div className="cc-main">
       <header className="cc-topbar">
-        <div className="manager-header"><h1>{pageTitle}</h1><small>DropDL Studio</small></div>
+        <div className="manager-header"><h1>{pageTitle}</h1><small><Wordmark/></small></div>
         <form className="smart-bar" onSubmit={submitSmart} role="search">
           <Icon name={smartUrls(smart).length?'link':'search'} size={17}/>
           <input id="queue-search" aria-label={L('Paste a link, search downloads, or press Enter for commands','الصق رابطًا أو ابحث في التنزيلات أو اضغط Enter للأوامر')} placeholder={L('Paste a link to download, or search…','الصق رابطًا للتنزيل أو ابحث…')} value={smart} onChange={e=>changeSmart(e.target.value)} onKeyDown={e=>{if(e.key==='Escape'&&smart){e.stopPropagation();changeSmart('')}}} dir="auto" autoComplete="off" spellCheck={false}/>
           {smartUrls(smart).length>0?<button className="primary compact" type="submit"><Icon name="down" size={15}/>{smartUrls(smart).length>1?L(`Add ${smartUrls(smart).length} links`,`إضافة ${smartUrls(smart).length} روابط`):L('Download','تنزيل')}</button>:<button type="button" className="smart-commands" onClick={()=>setPalette(true)} aria-label={ux(lang,'paletteTitle')}><kbd>Ctrl K</kbd></button>}
         </form>
-        <div className="header-tools"><EngineUpdate lang={lang}/><select aria-label={t('language')} value={lang} onChange={e=>setLang(e.target.value as Language)}><option value="en">EN</option><option value="ar">ع</option></select><button id="tour-add" className="primary new-download" onClick={()=>{setWorkspace('downloads');setSettingsOpen(false);setComposer(true)}}><Icon name="plus" size={17}/><span>{t('newDownload')}</span></button></div>
+        <div className="header-tools"><EngineUpdate lang={lang}/><select aria-label={t('language')} value={lang} onChange={e=>setLang(e.target.value as Language)}><option value="en">EN</option><option value="ar">ع</option></select><button className="secondary new-project" title={L('New Clip Studio project · Ctrl+Shift+N','مشروع جديد في استوديو القص · Ctrl+Shift+N')} onClick={()=>void newStudioProject()}><Icon name="scissors" size={16}/><span>{L('New project','مشروع جديد')}</span></button><button id="tour-add" className="primary new-download" onClick={()=>{setWorkspace('downloads');setSettingsOpen(false);setComposer(true)}}><Icon name="plus" size={17}/><span>{t('newDownload')}</span></button></div>
       </header>
       <div className="cc-banners">
       {error&&!(composer||settingsOpen)&&<div className="error-card" role="alert"><div><strong>{t('error')}</strong><p dir="auto">{error.replace(/\x1b\[[0-9;]*m/g,'')}</p></div><button className="ghost compact" onClick={()=>setError('')}>{t('dismiss')}</button></div>}
@@ -507,7 +522,7 @@ export default function App() {
         </section>
         <aside className="cc-inspector" aria-label={L('Inspector','لوحة التفاصيل')}>{detailPanel||overviewPanel}</aside>
       </div>:workspace==='connect'?<div className="cc-workspace cc-connect"><Connect lang={lang} preferences={preferences} onPreferences={async changes=>{if(!preferences)return;setPreferences(await savePreferences({...preferences,...changes}))}} onLink={link=>{acceptURL(link);setWorkspace('downloads');setComposer(true)}}/></div>
-      :<div className="cc-workspace"><Workspace onPlay={playMedia} tab={workspace} setTab={setWorkspace} lang={lang} jobs={jobs} onLink={link=>{acceptURL(link);setWorkspace('downloads');setComposer(true)}} onQueued={()=>void getJobs().then(data=>setJobs(data.jobs))} onPreview={job=>{setPlayback(null);void act('Open editor',()=>openEditor(job.id,lang))}}/></div>}
+      :<div className={`cc-workspace ${workspace==='studio'?'cc-studio':''}`}>{workspace==='studio'&&<StudioHome lang={lang} jobs={jobs} onError={setError} startDownload={async url=>{const result=await createBatch([url],{mode:'video',video_container:videoFormat,audio_container:audioFormat,quality:'best',skip_duplicates:false});if(!result.jobs[0])throw Error(L('That link could not be added.','تعذرت إضافة هذا الرابط.'));setJobs((await getJobs()).jobs);return result.jobs[0]}}/>}<Workspace onPlay={playMedia} tab={workspace} setTab={setWorkspace} lang={lang} jobs={jobs} onLink={link=>{acceptURL(link);setWorkspace('downloads');setComposer(true)}} onQueued={()=>void getJobs().then(data=>setJobs(data.jobs))} onPreview={job=>{setPlayback(null);void act('Open editor',()=>openEditor(job.id,lang))}}/></div>}
       <footer className="cc-status" role="contentinfo">
         <span className={`status-engine ${health?'connected':''}`}><i/>{t(health?'connected':'connecting')}</span>
         <span dir="ltr" className={totalSpeed>0?'live':''}><Icon name="down" size={13}/>{totalSpeed>0?`${bytes(totalSpeed)}/s`:L('Idle','خامل')}</span>
@@ -538,6 +553,7 @@ export default function App() {
     <div className="drawer-footer"><span>{clip?<><bdi>{clock(start)} – {clock(end)}</bdi></>:t('completeMedia')} · {urls.length} {t('queuedSources')}</span><button className="primary" disabled={!!busy||!!pendingPreview||!health?.ffmpeg||((clip||source)&&!health?.ffprobe)||(!source&&!urls.length)||(clip&&!validClip)} onClick={()=>void download()}><Icon name="down" size={18}/>{busy==='Queue downloads'||busy==='Export clip'?t('adding'):t(source?'export':'queue')}</button></div></>}
     {previewIndicator}</div></div>}
     {palette&&<CommandPalette lang={lang} commands={commands} onClose={()=>setPalette(false)} onUrls={intake}/>}
+    {whatsNew&&tour<0&&!palette&&!composer&&!settingsOpen&&<WhatsNew lang={lang} onClose={closeWhatsNew} onStudio={()=>{setComposer(false);setSettingsOpen(false);setWorkspace('studio')}} onNewProject={()=>void newStudioProject()}/>}
     {shortcuts&&<ShortcutsSheet lang={lang} onClose={()=>setShortcuts(false)}/>}
     {dragging&&<DropOverlay lang={lang}/>}
     {celebrate&&<Confetti lang={lang}/>}

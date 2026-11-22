@@ -23,15 +23,19 @@ import './editor-design.css'
 import './shell.css'
 import './editor-pro.css'
 import './connect.css'
+import './studio3.css'
+import './studio3b.css'
+import './brand.css'
 import { startDesktopBackend } from './desktop'
 
 window.addEventListener('error',event=>reportDiagnostic('ui-error',event.error?.stack||event.message))
 window.addEventListener('unhandledrejection',event=>reportDiagnostic('ui-unhandled-rejection',String(event.reason?.stack||event.reason)))
 reportDiagnostic('ui-started')
 void startDesktopBackend()
+const query=new URLSearchParams(location.search)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ErrorBoundary>{new URLSearchParams(location.search).get('player')?<PlayerApp/>:new URLSearchParams(location.search).get('editor')?<EditorApp sourceId={new URLSearchParams(location.search).get('editor')!}/>:<App />}</ErrorBoundary>
+    <ErrorBoundary>{query.get('player')?<PlayerApp/>:query.get('project')?<EditorApp projectId={query.get('project')!}/>:query.get('editor')?<EditorApp sourceId={query.get('editor')!}/>:<App />}</ErrorBoundary>
   </React.StrictMode>,
 )

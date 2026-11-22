@@ -31,7 +31,7 @@ def create_desktop_window(webview, settings, url, job_lookup=None):
     # discovery of the Window, GUI objects, settings and locks during startup.
     window = webview.create_window(f'DropDL Studio {VERSION}', url, width=1320, height=900, min_size=(800, 620))
     bridge._window = window
-    window.expose(bridge.choose_folder, bridge.open_folder, bridge.choose_media_files, bridge.choose_cookies, bridge.open_downloaded, bridge.open_library,bridge.locate_media,bridge.reveal_library, bridge.launch_repair,bridge.open_editor,bridge.open_player,bridge.export_diagnostics,bridge.configure_tray,bridge.youtube_sign_in,bridge.youtube_refresh,bridge.youtube_disconnect,bridge.configure_clipboard,bridge.notify)
+    window.expose(bridge.choose_folder, bridge.open_folder, bridge.choose_media_files, bridge.choose_cookies, bridge.open_downloaded, bridge.open_library,bridge.locate_media,bridge.reveal_library, bridge.launch_repair,bridge.open_editor,bridge.open_project,bridge.open_player,bridge.export_diagnostics,bridge.configure_tray,bridge.youtube_sign_in,bridge.youtube_refresh,bridge.youtube_disconnect,bridge.configure_clipboard,bridge.notify)
     window.events.shown += lambda: apply_windows_icon(window)
     tray=None
     if os.name=='nt':

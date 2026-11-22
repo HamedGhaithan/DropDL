@@ -3,10 +3,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/HamedGhaithan/DropDL/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/HamedGhaithan/DropDL?label=release&color=3A86FF"></a>
+  <a href="https://github.com/HamedGhaithan/DropDL/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/HamedGhaithan/DropDL?label=release&color=7A4DFF"></a>
   <a href="https://github.com/HamedGhaithan/DropDL/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/HamedGhaithan/DropDL/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-2FE3C2"></a>
-  <img alt="Windows 10 and 11" src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-7A55FF">
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-FF8A4C"></a>
+  <img alt="Windows 10 and 11" src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-FF3D77">
   <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen"></a>
 </p>
 
@@ -20,9 +20,17 @@ https://github.com/user-attachments/assets/2c28e6c3-20cd-4f47-83e3-a1ac002bb525
 
 
 
-![The Downloads window](docs/media/downloads-dark.jpg)
+![The Clip Studio home in DropDL 3.0](docs/media/studio-dark.jpg)
 
 ## Features
+
+**Clip Studio (new in 3.0)**
+- **New project with one click**, no clip needed. Bring media in from downloads, your PC or a link (Download & edit); projects save themselves and live on a Studio home with posters.
+- **Smart tools:** remove silences, split at scene changes, one-click vertical/square/4:5 formats with a blurred background, cross dissolves and even loudness (−14 LUFS).
+- **Edit by transcript:** get a video's captions (or import .srt/.vtt), click a line to jump, delete sentences to cut them, and turn the words into styled burned-in captions. Search what was said across all your videos.
+- **Looks, picture in picture and sound cleanup** per clip, with a live layered preview that matches the export.
+- **Music tools:** find the beat, cut clips to it in one click, and duck the music under voices. Ken Burns motion, animated titles, word-by-word karaoke and pop captions, markers that become chapters, and starter templates.
+- **GPU export:** NVIDIA NVENC, AMD AMF or Intel Quick Sync, tuned to x264 quality and about three times faster, with automatic CPU fallback. H.265, file-size targets, GIF and destination presets.
 
 **Connect (new in 3.0)**
 - **Phone Link:** scan a QR code and your phone becomes a remote for DropDL. Paste or share a link on the phone, your PC downloads it, and you save or play the result on the phone. Home network only, paired phones only.
@@ -47,12 +55,15 @@ https://github.com/user-attachments/assets/2c28e6c3-20cd-4f47-83e3-a1ac002bb525
 
 **Everything else**
 - Media library with search and filters, subscriptions to playlists and channels, and a browser extension that sends the current tab to the app.
+- A new look in 3.0: the Flare logo, a deep "Ink" palette with a floating workspace, and seven accent colours (Ultraviolet by default).
 - English and Arabic (full right-to-left layout), dark and light themes, keyboard shortcuts and a command palette.
 - Everything stays on your computer. No DropDL accounts, no telemetry, no remote error reporting. Phone Link never leaves your own network.
 
-| Editor | Arabic, light theme |
+| Downloads | Video editor |
 | --- | --- |
-| ![The video editor](docs/media/editor-dark.jpg) | ![The Downloads window in Arabic](docs/media/downloads-arabic-light.jpg) |
+| ![The Downloads window](docs/media/downloads-dark.jpg) | ![The video editor](docs/media/editor-dark.jpg) |
+| **Media library, light theme** | **Arabic, right to left** |
+| ![The media library in the light theme](docs/media/library-light.jpg) | ![The Downloads window in Arabic](docs/media/downloads-arabic-light.jpg) |
 
 ## Install
 

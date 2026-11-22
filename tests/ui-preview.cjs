@@ -88,6 +88,12 @@ async function run(lang) {
   const root=createRoot(document.getElementById('root'))
   await act(async()=>{root.render(React.createElement(App));await settle()})
   assert.equal(document.documentElement.dir,lang==='ar'?'rtl':'ltr')
+  // 3.0: after an update (tour already done) the What's new showcase opens once and closes when work starts.
+  assert(document.querySelector('.whats-new [role=dialog], .whats-new-backdrop .whats-new'),'What\'s new shows after the update')
+  await click(document.getElementById('tour-add'))
+  assert.equal(document.querySelector('.whats-new'),null,'Opening a download dismisses What\'s new')
+  assert.equal(localStorage.getItem('dropdl-whats-new'),'3.0.0')
+  await click(document.querySelector('.drawer-header .icon-button'))
   assert.equal(document.querySelectorAll('.task-card').length,1)
   assert(!document.querySelector('.download-workspace').textContent.includes('Preview source'))
   assert.equal(document.querySelector('.overview strong').firstChild.textContent,'1')

@@ -118,3 +118,21 @@ def test_new_settings_default_on_and_persist(tmp_path):
     settings.change(clipboard_watch=False, notify_done=False)
     reloaded = Settings(tmp_path / 'settings.json', tmp_path / 'downloads')
     assert reloaded.get()['clipboard_watch'] is False and reloaded.get()['notify_done'] is False
+
+
+def test_a_notification_click_never_waits_on_the_ui_thread():
+    """Clicking 'Link copied - download it?' froze the app: the click runs on the UI thread, and pywebview's
+    evaluate_js waits for that same thread. The action must be handed to a worker so the click returns first."""
+    import threading
+    returned, ran = threading.Event(), []
+
+    class UIWindow(FakeWindow):
+        def evaluate_js(self, script):
+            assert returned.wait(2), 'evaluate_js ran on the clicking thread and would deadlock'
+            ran.append(script)
+
+    notifier = cn.Notifier(UIWindow())
+    notifier.pending = "window.dropdlClipboard('https://youtu.be/one')"
+    notifier._clicked()
+    returned.set()
+    assert wait(lambda: ran) and ran == ["window.dropdlClipboard('https://youtu.be/one')"]

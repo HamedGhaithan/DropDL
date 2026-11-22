@@ -3,7 +3,7 @@ export type MediaInfo = {
   webpage_url?: string; extractor?: string; heights: number[]; suggested_qualities: string[]
   sizes?: Record<string, number>; audio_size?: number|null; is_live?: boolean; live_status?: string|null; has_h264?: boolean; chapters?: number; subtitles?: string[]
 }
-export type DownloadExtras = {codec?: 'auto'|'compatible'|'any'; sponsorblock?: 'off'|'mark'|'remove'; embed_thumbnail?: boolean; embed_subtitles?: boolean; audio_quality?: 'best'|'320'|'256'|'192'|'128'}
+export type DownloadExtras = {codec?: 'auto'|'compatible'|'any'; sponsorblock?: 'off'|'mark'|'remove'; embed_thumbnail?: boolean; embed_subtitles?: boolean; audio_quality?: 'best'|'320'|'256'|'192'|'128'; split_chapters?: boolean}
 export type Job = {
   id: string; origin?: string; url: string; site?:string; destination?:string; output_path?:string; attempt?:number; created_at?:number; speed_limit_kbps?:number; kind: 'video' | 'audio'; container: string; quality: string
   priority?:number;scheduled_at?:number;conversion_options?:ConversionOptions;download_options?:DownloadExtras;retry_at?:number;auto_retries?:number;
@@ -21,7 +21,7 @@ export type OutputOptions = {
 export type Health = {revision?:number;disk_free?:number|null;engine_version?:string|null;max_parallel?:number;queue_checkpoint_ok?:boolean;recovered_count?:number;restored_from_backup?:boolean;ok: boolean; version?:string; ffmpeg: boolean; ffprobe: boolean; max_concurrent_downloads: number}
 const isTauri = '__TAURI_INTERNALS__' in window
 export const API_BASE = import.meta.env.VITE_API_BASE || (isTauri ? 'http://127.0.0.1:17321' : '')
-async function request<T>(path: string, data?: unknown, timeout=0): Promise<T> {
+export async function request<T>(path: string, data?: unknown, timeout=0): Promise<T> {
   const controller=new AbortController()
   const timer=timeout?setTimeout(()=>controller.abort(),timeout):undefined
   let response:Response
@@ -63,7 +63,7 @@ export type Preferences = {download_directory:string;export_directory?:string;ke
 export const getPreferences = () => request<Preferences>('/api/settings')
 export const savePreferences = (payload: Pick<Preferences,'group_by_site'|'speed_limit_kbps'> & Partial<Preferences>) => request<Preferences>('/api/settings',payload)
 declare global {
-  interface Window {pywebview?: {api: {configure_tray?:(enabled:boolean,language:string)=>Promise<boolean>;choose_folder: () => Promise<Preferences|null>;choose_export_folder?:()=>Promise<Preferences|null>; open_folder: (id?:string) => Promise<boolean>;open_downloaded?: (id:string)=>Promise<boolean>;export_diagnostics?:()=>Promise<boolean>;close_editor?:()=>Promise<boolean>;open_player?:(key:string,language:string,time:number,rate:number)=>Promise<boolean>;close_player?:()=>Promise<boolean>;dock_player?:(time:number,rate:number)=>Promise<boolean>;open_editor?: (id:string,language:string)=>Promise<boolean>;open_library?: (id:string)=>Promise<boolean>;locate_media?:(id:string)=>Promise<MediaFile|null>;reveal_library?:(id:string)=>Promise<boolean>;launch_repair?:()=>Promise<boolean>;choose_media_files?:()=>Promise<{files:MediaFile[];errors:{name:string;error:string}[]}>;choose_cookies?:()=>Promise<{configured:boolean}|null>;youtube_sign_in?:(language:string)=>Promise<boolean>;youtube_refresh?:()=>Promise<{refreshed:boolean;signed_in?:boolean;error?:string}>;youtube_disconnect?:()=>Promise<YouTubeStatus>;configure_clipboard?:(enabled:boolean,language:string)=>Promise<boolean>;notify?:(title:string,message:string,jobId?:string)=>Promise<boolean>}}
+  interface Window {pywebview?: {api: {configure_tray?:(enabled:boolean,language:string)=>Promise<boolean>;choose_folder: () => Promise<Preferences|null>;choose_export_folder?:()=>Promise<Preferences|null>; open_folder: (id?:string) => Promise<boolean>;open_downloaded?: (id:string)=>Promise<boolean>;export_diagnostics?:()=>Promise<boolean>;close_editor?:()=>Promise<boolean>;open_player?:(key:string,language:string,time:number,rate:number)=>Promise<boolean>;close_player?:()=>Promise<boolean>;dock_player?:(time:number,rate:number)=>Promise<boolean>;open_editor?: (id:string,language:string,time?:number)=>Promise<boolean>;open_project?:(id:string,language:string,time?:number)=>Promise<boolean>;open_library?: (id:string)=>Promise<boolean>;locate_media?:(id:string)=>Promise<MediaFile|null>;reveal_library?:(id:string)=>Promise<boolean>;launch_repair?:()=>Promise<boolean>;choose_media_files?:()=>Promise<{files:MediaFile[];errors:{name:string;error:string}[]}>;choose_cookies?:()=>Promise<{configured:boolean}|null>;youtube_sign_in?:(language:string)=>Promise<boolean>;youtube_refresh?:()=>Promise<{refreshed:boolean;signed_in?:boolean;error?:string}>;youtube_disconnect?:()=>Promise<YouTubeStatus>;configure_clipboard?:(enabled:boolean,language:string)=>Promise<boolean>;notify?:(title:string,message:string,jobId?:string)=>Promise<boolean>}}
     dropdlClipboard?:(url:string)=>void
     dropdlFocusJob?:(id:string)=>void}
 }

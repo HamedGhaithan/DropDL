@@ -1,8 +1,21 @@
 import {useId} from 'react'
 /** DropDL mark: a drop with a download arrow cut out of it (2.1). */
 export function Logo({size}:{size?:number}={}) {
+  // The Flare mark: a fast-forward symbol turned downward onto a landing bar (download + play), on a coral-to-ultraviolet tile.
   const id = useId().replace(/:/g,'')
-  return <svg viewBox="0 0 64 64" width={size} height={size} fill="none" aria-hidden="true" className="dropdl-logo"><defs><linearGradient id={`${id}t`} x1="4" y1="2" x2="60" y2="62" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#2FE3C2"/><stop offset=".52" stopColor="#3A86FF"/><stop offset="1" stopColor="#7A55FF"/></linearGradient><linearGradient id={`${id}g`} x1="32" y1="0" x2="32" y2="34" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#fff" stopOpacity=".28"/><stop offset="1" stopColor="#fff" stopOpacity="0"/></linearGradient><mask id={`${id}m`} maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64"><path d="M32 7.2C26.4 14.8 13.8 27.2 13.8 38.4 13.8 48.5 22 56.6 32 56.6S50.2 48.5 50.2 38.4C50.2 27.2 37.6 14.8 32 7.2Z" fill="#fff"/><path d="M28.4 22.6h7.2v13.2h6.8L32 47.8 21.6 35.8h6.8V22.6Z" fill="#000" stroke="#000" strokeWidth="1.2" strokeLinejoin="round"/></mask></defs><rect width="64" height="64" rx="15" fill={`url(#${id}t)`}/><rect width="64" height="64" rx="15" fill={`url(#${id}g)`}/><rect x=".5" y=".5" width="63" height="63" rx="14.5" stroke="#fff" strokeOpacity=".18"/><rect width="64" height="64" fill="#fff" mask={`url(#${id}m)`}/></svg>
+  return <svg viewBox="0 0 64 64" width={size} height={size} fill="none" aria-hidden="true" className="dropdl-logo"><defs>
+    <linearGradient id={`${id}t`} x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#FF8A4C"/><stop offset=".46" stopColor="#FF3D77"/><stop offset="1" stopColor="#7A4DFF"/></linearGradient>
+    <radialGradient id={`${id}h`} cx="16" cy="6" r="46" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#fff" stopOpacity=".34"/><stop offset=".6" stopColor="#fff" stopOpacity=".06"/><stop offset="1" stopColor="#fff" stopOpacity="0"/></radialGradient>
+    <linearGradient id={`${id}s`} x1="32" y1="40" x2="32" y2="62" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#1B0A3D" stopOpacity="0"/><stop offset="1" stopColor="#1B0A3D" stopOpacity=".28"/></linearGradient></defs>
+    <rect x="2" y="2" width="60" height="60" rx="18" fill={`url(#${id}t)`}/><rect x="2" y="2" width="60" height="60" rx="18" fill={`url(#${id}s)`}/><rect x="2" y="2" width="60" height="60" rx="18" fill={`url(#${id}h)`}/>
+    <rect x="2.6" y="2.6" width="58.8" height="58.8" rx="17.4" stroke="#fff" strokeOpacity=".16" strokeWidth="1.2"/>
+    <path d="M21.2 14.6h21.6a2.1 2.1 0 0 1 1.62 3.44L33.62 31.3a2.1 2.1 0 0 1-3.24 0L19.58 18.04a2.1 2.1 0 0 1 1.62-3.44Z" fill="#fff" fillOpacity=".52"/>
+    <path d="M19.9 25.4h24.2a2.2 2.2 0 0 1 1.7 3.6L33.7 43.65a2.2 2.2 0 0 1-3.4 0L18.2 29a2.2 2.2 0 0 1 1.7-3.6Z" fill="#fff"/>
+    <rect x="19" y="47.2" width="26" height="4.6" rx="2.3" fill="#fff"/></svg>
+}
+/** "DropDL" set in the 3.0 wordmark style: heavy, tight, with DL in the Flare gradient. */
+export function Wordmark({studio=true}:{studio?:boolean}={}) {
+  return <span className="dropdl-wordmark" dir="ltr"><b>Drop</b><b className="dl">DL</b>{studio&&<i> Studio</i>}</span>
 }
 export function Icon({name,size=20}:{name:string;size?:number}) {
   const paths:Record<string,React.ReactNode> = {
