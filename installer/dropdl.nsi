@@ -5,7 +5,7 @@ Unicode true
 !include "nsDialogs.nsh"
 !include "FileFunc.nsh"
 !include "WordFunc.nsh"
-!define RELEASE "2.3.0"
+!define RELEASE "3.0.0"
 !define APPKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\DropDLStudio"
 Var InstalledVersion
 Var InstalledPath
@@ -25,11 +25,11 @@ OutFile "${OUTPUT}"
 InstallDir "$LOCALAPPDATA\Programs\DropDLStudio"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
-BrandingText "DropDL Studio 2.3.0"
-VIProductVersion "2.3.0.0"
+BrandingText "DropDL Studio 3.0.0"
+VIProductVersion "3.0.0.0"
 VIAddVersionKey "ProductName" "DropDL Studio"
 VIAddVersionKey "FileDescription" "DropDL Studio online prerequisite installer"
-VIAddVersionKey "FileVersion" "2.3.0"
+VIAddVersionKey "FileVersion" "3.0.0"
 VIAddVersionKey "LegalCopyright" "DropDL Studio contributors"
 !define MUI_ICON "dropdl.ico"
 !define MUI_UNICON "dropdl.ico"
@@ -187,7 +187,7 @@ Section "DropDL Studio"
  ${EndIf}
  CreateShortCut "$SMPROGRAMS\DropDL Studio\Repair DropDL Studio.lnk" "$CachedSetup" '/REPAIR' "$INSTDIR\installer\dropdl.ico"
  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\DropDLStudio" "DisplayName" "DropDL Studio"
- WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\DropDLStudio" "DisplayVersion" "2.3.0"
+ WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\DropDLStudio" "DisplayVersion" "3.0.0"
  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\DropDLStudio" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\DropDLStudio" "DisplayIcon" "$INSTDIR\installer\dropdl.ico"
  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\DropDLStudio" "InstallLocation" "$INSTDIR"

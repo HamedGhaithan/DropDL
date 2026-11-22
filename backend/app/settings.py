@@ -66,7 +66,7 @@ class Settings:
     def __init__(self, path: Path, default_directory: Path):
         self.path = path
         self.lock = Lock()
-        self.values = {'download_directory': str(default_directory.resolve()), 'group_by_site': True, 'speed_limit_kbps': 0, 'global_speed_limit_kbps':0, 'auto_recover':True, 'keep_in_tray':False, 'auto_cleanup':True, 'skip_duplicates':False, 'duplicate_naming_version':1, 'folder_rule':'none', 'name_rule':'original'}
+        self.values = {'download_directory': str(default_directory.resolve()), 'group_by_site': True, 'speed_limit_kbps': 0, 'global_speed_limit_kbps':0, 'auto_recover':True, 'keep_in_tray':False, 'clipboard_watch':True, 'notify_done':True, 'auto_cleanup':True, 'skip_duplicates':False, 'duplicate_naming_version':1, 'folder_rule':'none', 'name_rule':'original'}
         self.values['export_directory'] = str((default_directory / 'Exports').resolve())
         self.values.update(NETWORK_DEFAULTS)
         try:
@@ -87,7 +87,7 @@ class Settings:
             if isinstance(saved.get('group_by_site'), bool): self.values['group_by_site'] = saved['group_by_site']
             if type(saved.get('speed_limit_kbps')) is int and 0 <= saved['speed_limit_kbps'] <= 1000000:
                 self.values['speed_limit_kbps'] = saved['speed_limit_kbps']
-            for key in ("auto_recover","skip_duplicates","auto_cleanup","keep_in_tray"):
+            for key in ("auto_recover","skip_duplicates","auto_cleanup","keep_in_tray","clipboard_watch","notify_done"):
                 if isinstance(saved.get(key),bool) and (key!="skip_duplicates" or saved.get("duplicate_naming_version")==1):self.values[key]=saved[key]
             if type(saved.get("global_speed_limit_kbps")) is int and 0<=saved["global_speed_limit_kbps"]<=1000000:self.values["global_speed_limit_kbps"]=saved["global_speed_limit_kbps"]
             for key, value in saved.items():

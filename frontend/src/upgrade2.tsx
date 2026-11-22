@@ -56,7 +56,7 @@ export function Confetti({lang}: {lang: Language}) {
 }
 
 /** Title-bar speed, completion chime and desktop notification. */
-export function useSystemFeedback(jobs: Job[], speed: number, sound: boolean, notify: boolean) {
+export function useSystemFeedback(jobs: Job[], speed: number, sound: boolean, notify: boolean, lang: Language = 'en') {
   const seen = useRef<Map<string, string> | null>(null)
   useEffect(() => {
     const active = jobs.filter(j => !['completed', 'failed', 'cancelled', 'paused'].includes(j.status) && j.purpose !== 'preview').length
@@ -71,11 +71,17 @@ export function useSystemFeedback(jobs: Job[], speed: number, sound: boolean, no
     if (sound) try {
       const a = new AudioContext(); [660, 880, 1320].forEach((f, i) => {const o = a.createOscillator(), g = a.createGain(); o.frequency.value = f; o.type = 'sine'; o.connect(g); g.connect(a.destination); const t = a.currentTime + i * .11; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.12, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + .5); o.start(t); o.stop(t + .55)})
     } catch {/* audio unavailable */}
-    if (notify && 'Notification' in window && document.hidden) try {
+    // 3.0: native Windows notifications whenever DropDL is not the focused window
+    const native = window.pywebview?.api?.notify
+    if (notify && native && !document.hasFocus()) {
+      const ar = lang === 'ar', one = fresh.length === 1 ? fresh[0] : null
+      void native(one ? (ar ? 'اكتمل التنزيل' : 'Download complete') : (ar ? `اكتملت ${fresh.length} تنزيلات` : `${fresh.length} downloads finished`),
+        one ? (one.title || one.filename || '') : (ar ? 'انقر لفتح DropDL.' : 'Click to open DropDL.'), one ? one.id : undefined).catch(() => {})
+    } else if (notify && 'Notification' in window && document.hidden) try {
       const show = () => new Notification('DropDL Studio', {body: fresh.length > 1 ? `${fresh.length} downloads finished` : fresh[0].title || fresh[0].filename || ''})
       if (Notification.permission === 'granted') show(); else if (Notification.permission === 'default') void Notification.requestPermission().then(p => {if (p === 'granted') show()})
     } catch {/* notifications unavailable */}
-  }, [jobs, sound, notify])
+  }, [jobs, sound, notify, lang])
 }
 
 /** Offer to download a link that was just copied (opt-in). */

@@ -3,6 +3,10 @@ from PyInstaller.utils.hooks import collect_all
 block_cipher = None
 
 datas, binaries, hiddenimports = collect_all('yt_dlp')
+# 3.0: the Phone Link web app is served from app/phone
+datas += [('backend/app/phone', 'app/phone')]
+# 3.0: Clip Studio modules some routes import lazily
+hiddenimports += ['app.studio', 'app.analysis', 'app.transcripts', 'app.hardware']
 
 analysis = Analysis(
     ['backend/run.py'],

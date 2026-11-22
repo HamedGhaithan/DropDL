@@ -359,6 +359,20 @@ class EditSegment(BaseModel):
     start:float=Field(ge=0,allow_inf_nan=False)
     end:float=Field(gt=0,allow_inf_nan=False)
     speed:float=Field(ge=.25,le=4,allow_inf_nan=False)
+    # 3.0 per-clip picture and sound
+    look:str|None=Field(default=None,pattern='^(vivid|warm|cool|cinematic|punch|mono|noir|vintage|fade|dream)$')
+    fade_in:float=Field(default=0,ge=0,le=10,allow_inf_nan=False)
+    fade_out:float=Field(default=0,ge=0,le=10,allow_inf_nan=False)
+    opacity:float=Field(default=1,ge=0,le=1,allow_inf_nan=False)
+    scale:float=Field(default=1,ge=.1,le=1,allow_inf_nan=False)
+    x:float=Field(default=.5,ge=0,le=1,allow_inf_nan=False)
+    y:float=Field(default=.5,ge=0,le=1,allow_inf_nan=False)
+    denoise:bool=False
+    voice:bool=False
+    motion:str|None=Field(default=None,pattern='^(zoom-in|zoom-out|pan-left|pan-right)$')
+    motion_amount:float=Field(default=.12,ge=.03,le=.5,allow_inf_nan=False)
+    focus_x:float=Field(default=.5,ge=0,le=1,allow_inf_nan=False)
+    focus_y:float=Field(default=.5,ge=0,le=1,allow_inf_nan=False)
     @model_validator(mode='after')
     def valid_range(self):
         if self.end-self.start<.05:raise ValueError('Keep at least 0.05 seconds per segment.')
@@ -381,23 +395,41 @@ class TextCue(BaseModel):
     end:float=Field(gt=0,allow_inf_nan=False)
     text:str=Field(max_length=2000)
     kind:str=Field(default='caption',pattern='^(caption|title)$')
+    words:list[float]|None=Field(default=None,max_length=400)
+    animation:str|None=Field(default=None,pattern='^(none|fade|slide|pop|typewriter)$')
+    position:str|None=Field(default=None,pattern='^(top|center|bottom|lower)$')
     @model_validator(mode='after')
     def time_range(self):
         if self.end<=self.start:raise ValueError('Text end must follow its start.')
+        if self.words is not None and (len(self.words)!=len(self.text.split()) or not all(isinstance(t,(int,float)) and t==t and abs(t)!=float('inf') for t in self.words)):self.words=None
         return self
+
+class Marker(BaseModel):
+    t:float=Field(ge=0,le=86400,allow_inf_nan=False)
+    label:str=Field(default='',max_length=80)
 
 class EditSettings(BaseModel):
     tracks:list[TrackSettings]=Field(default_factory=list,max_length=8)
     export_preset:str|None=Field(default=None,max_length=60)
     audio_bitrate:int=Field(default=256)
     texts:list[TextCue]=Field(default_factory=list,max_length=500)
-    segments:list[EditSegment]=Field(min_length=1,max_length=100)
+    segments:list[EditSegment]=Field(default_factory=list,max_length=100)
     soundtrack:Soundtrack|None=None
-    export_format:str=Field(default='mp4',pattern='^(mp4|prores|mp3|m4a|wav)$')
+    export_format:str=Field(default='mp4',pattern='^(mp4|prores|mp3|m4a|wav|gif)$')
+    fit:str=Field(default='crop',pattern='^(crop|blur|fit)$')
+    encoder:str=Field(default='auto',pattern='^(auto|cpu)$')
+    codec:str=Field(default='h264',pattern='^(h264|hevc)$')
+    loudness:int=Field(default=0)
+    target_mb:float|None=Field(default=None,ge=1,le=4000,allow_inf_nan=False)
+    caption_style:str=Field(default='classic',pattern='^(classic|bold|highlight|boxed|karaoke|pop)$')
+    duck:bool=False
+    beats:list[float]=Field(default_factory=list,max_length=4000)
+    bpm:float=Field(default=0,ge=0,le=400,allow_inf_nan=False)
+    markers:list[Marker]=Field(default_factory=list,max_length=200)
     fps:int=Field(default=30)
     height:int=Field(default=0)
     crf:int=Field(default=18,ge=14,le=28)
-    ratio:str=Field(default='original',pattern='^(original|16:9|9:16|1:1|4:3)$')
+    ratio:str=Field(default='original',pattern='^(original|16:9|9:16|1:1|4:5|4:3)$')
     rotate:int=Field(default=0)
     flip:bool=False
     brightness:float=Field(default=0,ge=-.5,le=.5,allow_inf_nan=False)
@@ -408,15 +440,23 @@ class EditSettings(BaseModel):
     fadeOut:float=Field(default=0,ge=0,le=10,allow_inf_nan=False)
     @model_validator(mode='after')
     def rotation(self):
-        if self.fps not in (24,25,30,50,60) or self.height not in (0,720,1080,1920,2160):raise ValueError('Invalid export frame rate or resolution.')
+        if self.fps not in (24,25,30,50,60) or self.height not in (0,480,720,1080,1350,1440,1920,2160):raise ValueError('Invalid export frame rate or resolution.')
+        if self.loudness not in (0,-14,-16,-23):raise ValueError('Invalid loudness target.')
         if self.audio_bitrate not in (128,192,256,320):raise ValueError('Invalid audio bitrate.')
         if self.rotate not in (0,90,180,270):raise ValueError('Invalid rotation.')
         return self
 class EditorExport(BaseModel):
     source_job_id:str=Field(max_length=100)
     project:EditSettings
+    project_id:str|None=Field(default=None,max_length=40)
 @router.post('/editor/export',status_code=202)
 def editor_export(payload:EditorExport):
+    from . import studio
+    if not payload.project.segments:raise HTTPException(422,'Add a clip to the timeline before exporting.')
+    name=None
+    if payload.project_id:
+        if not studio.is_project(payload.project_id):raise HTTPException(422,'Invalid project.')
+        name=studio._record(payload.project_id)['name']
     source=jobs.get(payload.source_job_id)
     if not source or source.status!='completed' or not source.filename:raise HTTPException(409,'Complete the source first.')
     if not Path(source.filename).is_file():raise HTTPException(410,'Source file is missing.')
@@ -437,8 +477,10 @@ def editor_export(payload:EditorExport):
     video=payload.project.export_format not in ('mp3','m4a','wav') and any(sources[p.source_job_id or source.id]['metadata']['video_codec'] for p in payload.project.segments)
     if not video and not any(v['metadata']['audio_codec'] for v in sources.values()):raise HTTPException(422,'This timeline has no audio to export.')
     project['_sources']=sources;project['_default_source']=source.id
-    container=('mov' if payload.project.export_format=='prores' else 'mp4') if video else payload.project.export_format if payload.project.export_format in ('mp3','m4a','wav') else 'mp3'
-    return context.enqueue(source.url,'video' if video else 'audio',container,'best',purpose='clip',source_filename=source.filename,title=source.title+' — edit',destination=context.settings.get()['export_directory'],conversion_options={'preset':'device' if video else 'mp3','edit':project})
+    if name:project['_name']=name
+    if payload.project.export_format=='gif' and not video:raise HTTPException(422,'An animated GIF needs at least one video clip.')
+    container=('mov' if payload.project.export_format=='prores' else 'gif' if payload.project.export_format=='gif' else 'mp4') if video else payload.project.export_format if payload.project.export_format in ('mp3','m4a','wav') else 'mp3'
+    return context.enqueue(source.url,'video' if video else 'audio',container,'best',purpose='clip',source_filename=source.filename,title=(name or source.title+' — edit'),destination=context.settings.get()['export_directory'],conversion_options={'preset':'device' if video else 'mp3','edit':project})
 
 
 class ProjectSnapshot(BaseModel):
@@ -464,11 +506,11 @@ def project_history(identity):
 def load_editor_project(identity:str):
     with _project_lock:return {'history':project_history(identity)}
 
-@router.put('/editor/projects/{identity}')
-def save_editor_project(identity:str,payload:ProjectSnapshot):
-    if len(identity)>100:raise HTTPException(422,'Invalid project identity.')
+def store_project(identity,project):
+    """Add a timeline snapshot to a project's recovery history (newest first, 30 kept)."""
+    project=EditSettings.model_validate(project).model_dump(exclude_none=True)
     with _project_lock:
-        history=project_history(identity);project=payload.project.model_dump(exclude_none=True)
+        history=project_history(identity)
         if history and history[0]['project']==project:return {'history':history}
         path=project_path(identity);path.parent.mkdir(parents=True,exist_ok=True)
         backup=path.with_suffix('.backup.json');temp=path.with_suffix('.tmp')
@@ -476,3 +518,12 @@ def save_editor_project(identity:str,payload:ProjectSnapshot):
         history=[{'id':uuid4().hex,'time':time.time(),'project':project}]+history[:29]
         temp.write_text(json.dumps(history,ensure_ascii=False),encoding='utf-8');os.replace(temp,path)
         return {'history':history}
+
+@router.put('/editor/projects/{identity}')
+def save_editor_project(identity:str,payload:ProjectSnapshot):
+    if len(identity)>100:raise HTTPException(422,'Invalid project identity.')
+    from . import studio
+    if studio.is_project(identity):studio._record(identity)       # unknown project ids are refused, not created
+    result=store_project(identity,payload.project.model_dump(exclude_none=True))
+    studio.touch(identity,result['history'][0]['project'])
+    return result

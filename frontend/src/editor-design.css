@@ -4,7 +4,7 @@
 .editor-v2{font-size:13px;background:var(--bg)!important;gap:0}
 .editor-header-v2{height:58px;padding:0 18px!important;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--border)!important;background:var(--sidebar)!important}
 .editor-brand{display:flex;align-items:center;gap:12px}
-.editor-brand>svg{width:32px!important;height:32px!important;border-radius:9px;box-shadow:0 8px 20px -10px #3a86ff;flex-shrink:0}
+.editor-brand>svg{width:32px!important;height:32px!important;border-radius:9px;box-shadow:0 8px 20px -10px #ff3d77;flex-shrink:0}
 .editor-brand span{font:700 10.5px/1 var(--font-ui)!important;letter-spacing:.09em!important;text-transform:uppercase;color:var(--subtle)!important}
 .editor-brand h1{font-size:16px!important;font-weight:720!important;letter-spacing:-.02em!important;margin:3px 0 0!important}
 .editor-header-actions{display:flex;align-items:center;gap:6px}

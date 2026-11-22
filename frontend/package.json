@@ -1,7 +1,7 @@
 {
   "name": "dropdl-frontend",
   "private": true,
-  "version": "2.3.0",
+  "version": "3.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,7 +14,8 @@
     "test:player": "node ../tests/player-browser.cjs",
     "test:library": "node ../tests/library-browser.cjs",
     "test:fps": "node ../tests/export-fps.cjs",
-    "test:pro": "node ../tests/pro-editor.cjs"
+    "test:pro": "node ../tests/pro-editor.cjs",
+    "test:studio": "node ../tests/studio-model.cjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

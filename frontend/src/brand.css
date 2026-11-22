@@ -1,0 +1,242 @@
+/* =====================================================================================================
+   DropDL 3.0 · "Flare" identity
+   Ink surfaces, a coral → magenta → ultraviolet signature gradient, Ultraviolet as the working accent,
+   softer geometry and glass layers. Loaded last: it sets the tokens every older layer reads, then restyles
+   the shell, controls, dialogs and Clip Studio. The editor keeps its pro density; only its chrome changes.
+   ===================================================================================================== */
+
+/* ---------- tokens */
+:root{
+  --font-display:"Inter Variable","IBM Plex Sans Arabic","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  --bg:#09090e;--sidebar:#0c0c12;--surface:#111118;--raised:#181820;--sunken:#06060a;--input:#0e0e15;
+  --text:#f4f2f8;--muted:#a6a2b5;--subtle:#716d82;--border:#1f1f2a;--border-strong:#2c2c3a;
+  --danger:#ff7a8a;--success:#34d399;--warning:#ffbe4d;--info:#62a8ff;--notice:#d7d3e3;
+  --accent-soft:color-mix(in srgb,var(--accent) 15%,transparent);--accent-line:color-mix(in srgb,var(--accent) 42%,var(--border));
+  --flare-1:#ff8a4c;--flare-2:#ff3d77;--flare-3:#7a4dff;
+  --brand-gradient:linear-gradient(135deg,var(--flare-1) 0%,var(--flare-2) 46%,var(--flare-3) 100%);
+  --brand-gradient-h:linear-gradient(90deg,var(--flare-1),var(--flare-2) 50%,var(--flare-3));
+  --glass:color-mix(in srgb,var(--surface) 78%,transparent);
+  --radius-xs:8px;--radius-sm:10px;--radius:14px;--radius-lg:18px;--radius-xl:24px;
+  --shadow-sm:0 1px 2px rgb(0 0 0/.4);
+  --shadow:0 1px 0 rgb(255 255 255/.035) inset,0 14px 34px -20px rgb(0 0 0/.8);
+  --shadow-lg:0 40px 100px -30px rgb(0 0 0/.85),0 0 0 1px rgb(255 255 255/.05);
+  --glow:0 10px 30px -12px color-mix(in srgb,var(--accent) 75%,transparent);
+  --ring:0 0 0 3px color-mix(in srgb,var(--accent) 38%,transparent);
+  --ease:cubic-bezier(.2,.8,.2,1);
+  font-size:13.5px;letter-spacing:-.008em;
+}
+:root[data-theme=light]{
+  --bg:#f4f3f7;--sidebar:#fbfafd;--surface:#ffffff;--raised:#f3f2f7;--sunken:#ebe9f1;--input:#ffffff;
+  --text:#14121c;--muted:#5a566a;--subtle:#857f93;--border:#e4e2ea;--border-strong:#d3d0dc;
+  --danger:#c8263f;--success:#047857;--warning:#946000;--info:#2563eb;--notice:#3b3650;
+  --glass:color-mix(in srgb,#fff 80%,transparent);
+  --shadow-sm:0 1px 2px rgb(20 16 40/.06);
+  --shadow:0 1px 2px rgb(20 16 40/.04),0 12px 30px -18px rgb(20 16 40/.18);
+  --shadow-lg:0 40px 100px -34px rgb(20 16 40/.38),0 0 0 1px rgb(20 16 40/.05);
+  --glow:0 10px 26px -12px color-mix(in srgb,var(--accent) 60%,transparent);
+}
+html,body{background:var(--bg)}
+::selection{background:color-mix(in srgb,var(--accent) 38%,transparent)}
+h1,h2,h3,h4{font-family:var(--font-display);letter-spacing:-.025em}
+::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text) 14%,transparent);border-color:var(--bg)}
+
+/* ---------- wordmark */
+.dropdl-wordmark{display:inline-flex;align-items:baseline;gap:0;font:800 1em/1 var(--font-display);letter-spacing:-.035em;color:var(--text);white-space:nowrap}
+.dropdl-wordmark b{font-weight:800}
+.dropdl-wordmark .dl{background:var(--brand-gradient-h);-webkit-background-clip:text;background-clip:text;color:transparent}
+.dropdl-wordmark i{font-style:normal;font-weight:600;letter-spacing:-.01em;color:var(--subtle);margin-inline-start:.32em}
+
+/* ---------- controls */
+button,.link-button{border-radius:var(--radius-sm);font-weight:620}
+.primary{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 88%,#fff 12%),var(--accent))!important;color:var(--on-accent)!important;
+  box-shadow:0 1px 0 rgb(255 255 255/.22) inset,0 -1px 0 rgb(0 0 0/.12) inset,var(--glow)!important}
+.primary:hover:not(:disabled){filter:brightness(1.08) saturate(1.05)}
+.primary:disabled{filter:saturate(.5);opacity:.6}
+.secondary{background:color-mix(in srgb,var(--raised) 90%,transparent)!important;border-color:var(--border-strong)!important}
+.secondary:hover:not(:disabled){background:color-mix(in srgb,var(--raised) 70%,var(--text) 8%)!important}
+.icon-button{border-radius:var(--radius-sm)}
+input:not([type=checkbox]):not([type=range]):not([type=radio]),textarea,select{border-radius:var(--radius-sm);background:var(--input);border-color:var(--border-strong)}
+input:not([type=checkbox]):not([type=range]):not([type=radio]):focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:var(--ring)!important}
+select{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--subtle) 50%),linear-gradient(135deg,var(--subtle) 50%,transparent 50%);background-size:5px 5px,5px 5px;background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;background-repeat:no-repeat}
+:root[dir=rtl] select{background-position:10px 52%,15px 52%}
+input[type=checkbox]{accent-color:var(--accent)}
+.eyebrow,.nav-label,.section-label{letter-spacing:.11em!important}
+
+/* ---------- application shell */
+.cc-app{grid-template-columns:88px minmax(0,1fr)}
+.cc-app.collapsed{grid-template-columns:64px minmax(0,1fr)}
+.cc-rail{background:linear-gradient(180deg,var(--sidebar),color-mix(in srgb,var(--sidebar) 70%,var(--bg)));border-inline-end:1px solid var(--border);padding-top:16px;gap:4px}
+.rail-logo{width:42px;height:42px;border-radius:13px;margin-bottom:18px;box-shadow:0 12px 28px -12px #ff3d77,0 6px 18px -10px #7a4dff;overflow:visible}
+.rail-logo svg{width:42px;height:42px}
+.rail-item{position:relative;width:72px}
+.rail-icon{width:46px;height:34px;border-radius:12px}
+.rail-label{font-weight:620;font-size:10.5px}
+.rail-item.selected .rail-icon{background:var(--brand-gradient);color:#fff;box-shadow:0 8px 20px -10px #ff3d77,0 1px 0 rgb(255 255 255/.25) inset}
+.rail-item.selected .rail-label{color:var(--text)}
+.rail-item.selected::before{content:'';position:absolute;inset-inline-start:-8px;top:8px;width:3px;height:26px;border-radius:0 3px 3px 0;background:var(--brand-gradient)}
+:root[dir=rtl] .rail-item.selected::before{border-radius:3px 0 0 3px}
+.rail-item:hover:not(.selected) .rail-icon{background:color-mix(in srgb,var(--text) 7%,transparent)}
+.rail-badge{background:var(--flare-2)!important;color:#fff!important;box-shadow:0 0 0 2px var(--sidebar)}
+
+.cc-main{background:radial-gradient(900px 340px at 18% -8%,color-mix(in srgb,var(--flare-3) 11%,transparent),transparent 70%),radial-gradient(700px 260px at 92% -12%,color-mix(in srgb,var(--flare-2) 8%,transparent),transparent 70%),var(--bg)}
+:root[data-theme=light] .cc-main{background:radial-gradient(900px 340px at 18% -8%,color-mix(in srgb,var(--flare-3) 7%,transparent),transparent 70%),radial-gradient(700px 260px at 92% -12%,color-mix(in srgb,var(--flare-1) 7%,transparent),transparent 70%),var(--bg)}
+.cc-topbar{background:transparent;border-bottom:1px solid color-mix(in srgb,var(--border) 80%,transparent);padding:14px 22px;gap:20px}
+.cc-topbar .manager-header h1{font-size:21px!important;font-weight:780!important;letter-spacing:-.03em!important}
+.cc-topbar .manager-header small{font-size:11px;margin-top:2px}
+.cc-topbar .manager-header small .dropdl-wordmark{font-size:11.5px}
+.smart-bar{height:48px;border-radius:16px;background:var(--glass);backdrop-filter:blur(14px) saturate(1.3);border:1px solid var(--border-strong);box-shadow:0 1px 0 rgb(255 255 255/.03) inset,0 10px 30px -20px rgb(0 0 0/.6)}
+:root[data-theme=light] .smart-bar{box-shadow:0 1px 2px rgb(20 16 40/.04),0 10px 26px -18px rgb(20 16 40/.2)}
+.smart-bar:focus-within{border-color:color-mix(in srgb,var(--accent) 70%,transparent);box-shadow:var(--ring),0 14px 36px -18px color-mix(in srgb,var(--accent) 60%,transparent)}
+.smart-bar .primary{border-radius:11px!important}
+.smart-commands kbd{background:color-mix(in srgb,var(--text) 6%,transparent)}
+.header-tools .new-project{border-radius:12px}
+.header-tools .new-project svg{color:var(--flare-2)}
+.new-download{border-radius:12px}
+
+/* filter chips */
+.filter-nav button{border-color:transparent!important;background:color-mix(in srgb,var(--text) 4%,transparent)!important}
+.filter-nav button:hover{background:color-mix(in srgb,var(--text) 8%,transparent)!important;color:var(--text)!important}
+.filter-nav button.selected{background:var(--accent-soft)!important;color:var(--text)!important;border-color:var(--accent-line)!important}
+.filter-nav button.selected svg{color:var(--accent)}
+.filter-nav button.selected b{background:var(--accent)!important;color:var(--on-accent)!important}
+
+/* task cards */
+.task-card{border-radius:16px!important;background:color-mix(in srgb,var(--surface) 92%,transparent)!important;border:1px solid var(--border)!important;transition:border-color .15s var(--ease),transform .15s var(--ease),box-shadow .15s var(--ease)!important}
+.task-card:hover{border-color:var(--border-strong)!important;box-shadow:var(--shadow)!important}
+.task-card.selected,.task-card.focused{border-color:var(--accent-line)!important;box-shadow:0 0 0 1px var(--accent-line),var(--shadow)!important}
+.task-thumb{border-radius:11px!important}
+.task-main .file-title{font-weight:650!important;letter-spacing:-.012em}
+.progress{height:6px!important;background:color-mix(in srgb,var(--text) 8%,transparent)!important}
+.progress>div{background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 45%,var(--flare-2)))!important}
+.progress.live>div{background:linear-gradient(90deg,var(--accent),var(--flare-2),var(--accent))!important;background-size:200% 100%!important}
+.task-card[data-status=completed] .progress>div{background:var(--success)!important}
+.status-badge{border-radius:99px!important}
+
+/* inspector and panels */
+.cc-inspector{background:transparent!important}
+.cc-inspector .overview>.stat,.inspector-section,.panel,.media-card,.connect-card{border-radius:var(--radius-lg)!important}
+.cc-inspector .overview>.stat{background:var(--surface)!important;border:1px solid var(--border)!important}
+.tool-row{border-radius:14px!important}
+.tool-row .tool-symbol{background:var(--accent-soft)!important;color:var(--accent)!important;border-radius:11px!important}
+.tool-row.tool-convert .tool-symbol{background:color-mix(in srgb,var(--flare-1) 16%,transparent)!important;color:var(--flare-1)!important}
+.cc-status{background:color-mix(in srgb,var(--sidebar) 80%,transparent);border-top:1px solid var(--border)}
+.status-engine.connected i{background:var(--success);box-shadow:0 0 0 3px color-mix(in srgb,var(--success) 22%,transparent)}
+
+/* empty states */
+.queue-empty .empty-symbol{width:84px;height:84px;filter:drop-shadow(0 18px 30px rgb(255 61 119/.35))}
+.queue-empty .empty-symbol svg{width:84px;height:84px}
+.queue-empty h2{font-size:22px!important;letter-spacing:-.03em!important}
+
+/* ---------- dialogs, drawers, palette, toasts */
+.modal-backdrop{background:rgb(5 4 10/.58)!important;backdrop-filter:blur(10px) saturate(1.2)!important}
+:root[data-theme=light] .modal-backdrop{background:rgb(30 22 60/.24)!important}
+.drawer,.modal,[role=dialog].drawer{border-radius:var(--radius-xl)!important;border:1px solid var(--border-strong)!important;box-shadow:var(--shadow-lg)!important;background:var(--surface)!important}
+.drawer-header{border-bottom:1px solid var(--border)!important}
+.drawer-footer{border-top:1px solid var(--border)!important;background:color-mix(in srgb,var(--surface) 92%,var(--sunken))!important}
+.command-palette,.palette{border-radius:var(--radius-xl)!important;background:var(--glass)!important;backdrop-filter:blur(18px) saturate(1.4)!important}
+.completion-toast,.preview-toast,.clip-toast{border-radius:16px!important;border:1px solid var(--border-strong)!important;background:var(--glass)!important;backdrop-filter:blur(16px)!important;box-shadow:var(--shadow-lg)!important}
+
+/* ---------- workspaces */
+.workspace-intro,.cc-workspace .panel{border-radius:var(--radius-lg)!important}
+.media-card:hover{border-color:var(--accent-line)!important;box-shadow:var(--shadow)!important;transform:translateY(-2px)}
+.studio-hero{border-color:var(--border-strong)}
+.studio-new-main{box-shadow:0 22px 44px -20px #ff3d77,0 10px 30px -18px #7a4dff}
+.studio-project,.template-card,.studio-hits button{border-radius:18px}
+
+/* ---------- Clip Studio (editor): same density, new chrome */
+.editor-v2.pp{
+  --pp-bg:#08080c;--pp-panel:#101016;--pp-panel-2:#16161e;--pp-raised:#1e1e28;--pp-border:#24242f;--pp-line:#30303c;
+  --pp-text:#eeebf3;--pp-muted:#9894a6;--pp-subtle:#6e6a7d;
+  --pp-blue:var(--accent);--pp-blue-soft:color-mix(in srgb,var(--accent) 17%,transparent);
+  --pp-video:#7c63f2;--pp-video-dark:#382d78;--pp-audio:#36d399;--pp-audio-dark:#113a2b;
+  --pp-time:#ff7a6b;--pp-playhead:#ff4f73;
+}
+:root[data-theme=light] .editor-v2.pp{
+  --pp-bg:#e4e2ea;--pp-panel:#f8f7fb;--pp-panel-2:#efedf4;--pp-raised:#e6e4ec;--pp-border:#d4d1dc;--pp-line:#c3c0cd;
+  --pp-text:#17151e;--pp-muted:#5d596b;--pp-subtle:#7e7a8c;
+  --pp-video:#6a52e6;--pp-video-dark:#dcd5fd;--pp-audio:#0f9f6e;--pp-audio-dark:#cdeedf;
+  --pp-time:#d4402c;--pp-playhead:#e0335d;
+}
+.pp .pp-header{background:linear-gradient(180deg,color-mix(in srgb,var(--pp-panel) 96%,var(--flare-3) 4%),var(--pp-panel))!important}
+.editor-brand .dropdl-logo{border-radius:9px;box-shadow:0 8px 18px -10px #ff3d77}
+.editor-brand span .dropdl-wordmark{font-size:11px}
+.pp-timecode{color:var(--pp-time)!important}
+.ruler-playhead{background:var(--pp-playhead)!important}
+.pp .sequence-playhead{border-left-color:var(--pp-playhead)!important}
+.pp .pp-tab.selected{box-shadow:inset 0 2px 0 var(--pp-blue)!important}
+.pp .primary{border-radius:8px!important}
+.pp #editor-export-button{background:var(--brand-gradient)!important;color:#fff!important;box-shadow:0 8px 20px -10px #ff3d77!important}
+.pp .sequence-segment.selected{box-shadow:0 0 0 2px var(--pp-blue),0 8px 22px -12px var(--pp-blue)!important}
+
+/* ---------- motion preference */
+:root[data-motion=reduced] .task-card,:root[data-motion=reduced] .media-card{transition:none!important;transform:none!important}
+
+/* ---------- floating canvas: the rail sits on the window frame, content floats on a rounded canvas */
+.cc-app{background:#050508!important}
+:root[data-theme=light] .cc-app{background:#e7e5ee!important}
+.cc-rail{background:transparent!important;border:0!important}
+.cc-main{margin:10px;margin-inline-start:0;border-radius:22px;border:1px solid color-mix(in srgb,var(--border-strong) 70%,transparent);overflow:hidden;
+  background:radial-gradient(900px 360px at 16% -10%,color-mix(in srgb,var(--flare-3) 12%,transparent),transparent 70%),radial-gradient(720px 280px at 94% -14%,color-mix(in srgb,var(--flare-2) 9%,transparent),transparent 70%),#0c0c12!important;
+  box-shadow:0 1px 0 rgb(255 255 255/.04) inset,0 30px 80px -40px rgb(0 0 0/.9)}
+:root[data-theme=light] .cc-main{background:radial-gradient(900px 360px at 16% -10%,color-mix(in srgb,var(--flare-3) 7%,transparent),transparent 70%),radial-gradient(720px 280px at 94% -14%,color-mix(in srgb,var(--flare-1) 8%,transparent),transparent 70%),#faf9fc!important;
+  border-color:#dcdae4;box-shadow:0 24px 60px -40px rgb(20 16 40/.35)}
+.cc-status{background:transparent!important}
+.cc-inspector{background:color-mix(in srgb,var(--text) 2%,transparent)!important}
+.cc-inspector .overview>.stat{background:color-mix(in srgb,var(--surface) 85%,transparent)!important;border-color:var(--border)!important}
+.cc-inspector .stat-head i{border-radius:9px!important;background:var(--accent-soft)!important;color:var(--accent)!important}
+.cc-inspector .stat strong{font-family:var(--font-display);letter-spacing:-.03em}
+.task-card{padding:10px 14px 10px 12px!important}
+.task-thumb{border-radius:12px!important;border-color:color-mix(in srgb,var(--text) 8%,transparent)!important}
+.task-card:hover{transform:translateY(-1px)}
+.rail-item .rail-label{color:color-mix(in srgb,var(--text) 62%,transparent)}
+.rail-item:hover .rail-label{color:var(--text)}
+@media (max-width:760px){.cc-main{margin:0;border-radius:0;border:0}}
+
+/* the canvas colour is the base background, so sticky headers and panels inside it match */
+:root{--bg:#0c0c12}
+:root[data-theme=light]{--bg:#faf9fc}
+.cc-main{background-color:var(--bg)!important}
+
+/* appearance previews show the real 3.0 shell: frame, rail, floating canvas, accent card */
+.theme-model{height:91px;border-radius:10px;background:#050508!important;border:1px solid #23232e!important}
+.theme-model.light{background:#e7e5ee!important;border-color:#d6d3df!important}
+.theme-model .model-sidebar{inset-block:0;inset-inline-start:0;width:20%;background:transparent!important;border:0!important}
+.theme-model .model-sidebar::after{content:'';position:absolute;top:9px;inset-inline-start:30%;width:40%;aspect-ratio:1;border-radius:4px;background:linear-gradient(135deg,#ff8a4c,#ff3d77 46%,#7a4dff)}
+.theme-model::before{content:'';position:absolute;inset:6px 6px 6px 21%;border-radius:8px;background:#0c0c12;border:1px solid #2c2c3a}
+.theme-model.light::before{background:#faf9fc;border-color:#dcdae4}
+:root[dir=rtl] .theme-model::before{inset:6px 21% 6px 6px}
+.theme-model .model-line{z-index:1;inset-inline-start:28%;top:15px;width:30%;background:#a6a2b5!important}
+.theme-model.light .model-line{background:#5a566a!important}
+.theme-model .model-card{z-index:1;inset-inline-start:28%;top:27px;width:62%;background:color-mix(in srgb,var(--accent) 30%,#0c0c12)!important;border:1px solid color-mix(in srgb,var(--accent) 50%,transparent)!important;border-radius:5px}
+.theme-model.light .model-card{background:color-mix(in srgb,var(--accent) 14%,#fff)!important}
+.theme-model .model-row{z-index:1;inset-inline-start:28%;top:58px;width:62%;background:#1f1f2a!important}
+.theme-model.light .model-row{background:#ebe9f1!important}
+.theme-model .model-row.second{top:71px;width:42%}
+
+/* What's new: the hero glows in the Flare colours */
+.whats-new-hero{background:radial-gradient(70% 120% at 15% 0%,#ff8a4c99,transparent 60%),radial-gradient(70% 120% at 85% 10%,#7a4dffcc,transparent 60%),linear-gradient(135deg,#2a0f2e,#170d3a)!important}
+.whats-new-grid li{border-radius:18px}
+.wn-icon{border-radius:14px;box-shadow:0 10px 22px -12px #ff3d77}
+
+/* Library and Convert: every dropdown keeps its arrow, and the filters read as labelled pills */
+.library-toolbar select,.library-organization select,.selection-bar select{background-image:linear-gradient(45deg,transparent 50%,var(--subtle) 50%),linear-gradient(135deg,var(--subtle) 50%,transparent 50%)!important;background-size:5px 5px,5px 5px!important;background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%!important;background-repeat:no-repeat!important;padding-inline-end:30px!important}
+:root[dir=rtl] .library-toolbar select,:root[dir=rtl] .library-organization select,:root[dir=rtl] .selection-bar select{background-position:10px 52%,15px 52%!important}
+.library-toolbar select{border-radius:12px!important;font-weight:650}
+.library-organization{align-items:center!important;gap:8px!important}
+.library-organization label{flex-direction:row!important;align-items:center;gap:0!important;height:38px;padding-inline-start:13px;border:1px solid var(--border);border-radius:12px;background:var(--surface);font-size:11px!important;font-weight:650;color:var(--subtle)!important;transition:border-color .15s,box-shadow .15s}
+.library-organization label select{height:36px!important;margin:0!important;border:0!important;background-color:transparent!important;box-shadow:none!important;padding-inline-start:7px!important;font-size:12px!important;font-weight:700;color:var(--text)!important}
+.library-organization label:hover{border-color:var(--border-strong)}
+.library-organization label:focus-within{border-color:var(--accent);box-shadow:var(--ring)}
+.library-organization>button{height:38px;border-radius:12px!important}
+.library-view{padding:3px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.library-view button{height:30px;border-radius:9px!important;border:0!important}
+.library-view [aria-pressed=true]{background:var(--accent-soft)!important;color:var(--text)!important}
+/* Studio home: the four templates always fill the row */
+.template-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))!important}
+/* Studio home: the New project subtitle stays readable on the gradient */
+.studio-new-main b{color:#fff}
+.studio-new-main small{color:rgb(255 255 255/.88)!important}
+/* Every dropdown keeps its arrow, including the editor's and the Export dialog's, which set their own backgrounds */
+select:not([multiple]):not([size]){background-image:linear-gradient(45deg,transparent 50%,var(--subtle,#8a8698) 50%),linear-gradient(135deg,var(--subtle,#8a8698) 50%,transparent 50%)!important;background-size:5px 5px,5px 5px!important;background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%!important;background-repeat:no-repeat!important;padding-inline-end:28px!important}
+:root[dir=rtl] select:not([multiple]):not([size]){background-position:10px 52%,15px 52%!important}
+.pp select:not([multiple]):not([size]){background-image:linear-gradient(45deg,transparent 50%,var(--pp-muted) 50%),linear-gradient(135deg,var(--pp-muted) 50%,transparent 50%)!important}

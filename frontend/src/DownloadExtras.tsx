@@ -2,7 +2,7 @@ import {useEffect, useState} from 'react'
 import {DownloadExtras as Extras, MediaInfo} from './api'
 
 const KEY = 'dropdl-download-extras-v2'
-export const DEFAULT_EXTRAS: Required<Extras> = {codec: 'auto', sponsorblock: 'off', embed_thumbnail: true, embed_subtitles: false, audio_quality: 'best'}
+export const DEFAULT_EXTRAS: Required<Extras> = {codec: 'auto', sponsorblock: 'off', embed_thumbnail: true, embed_subtitles: false, audio_quality: 'best', split_chapters: false}
 
 /** Last-used extras are remembered per viewer; the backend validates them again. */
 export function useDownloadExtras(): [Required<Extras>, (next: Required<Extras>) => void] {
@@ -46,6 +46,7 @@ export default function DownloadExtras({lang, value, onChange, mode, videoFormat
     {value.sponsorblock !== 'off' && !youtube && <p className="muted">{w('SponsorBlock data exists for YouTube videos only; other sites are downloaded normally.', 'تتوفر بيانات SponsorBlock لفيديوهات YouTube فقط؛ تُنزّل المواقع الأخرى بشكل عادي.')}</p>}
     <label className="toggle"><input type="checkbox" checked={value.embed_thumbnail} onChange={e => set('embed_thumbnail', e.target.checked)}/>{w('Embed cover art / thumbnail', 'تضمين صورة الغلاف')}</label>
     {video && <label className="toggle"><input type="checkbox" checked={value.embed_subtitles} disabled={!hasSubtitles} onChange={e => set('embed_subtitles', e.target.checked)}/>{w('Embed subtitles inside the video', 'تضمين الترجمة داخل الفيديو')}{!hasSubtitles && <small className="muted"> — {w('set subtitle languages first', 'حدد لغات الترجمة أولًا')}</small>}</label>}
+    <label className="toggle"><input type="checkbox" checked={value.split_chapters} disabled={info?.chapters === 0} onChange={e => set('split_chapters', e.target.checked)}/>{w('Also save each chapter as its own file', 'احفظ كل فصل في ملف مستقل أيضًا')}{info?.chapters ? <small className="muted"> — {info.chapters} {w('chapters', 'فصول')}</small> : info ? <small className="muted"> — {w('this video has no chapters', 'هذا الفيديو بلا فصول')}</small> : null}</label>
     {info && video && info.has_h264 === false && value.codec === 'compatible' && <p className="muted">{w('This source has no H.264 stream; the closest compatible format will be used.', 'لا يحتوي هذا المصدر على H.264؛ سيُستخدم أقرب تنسيق متوافق.')}</p>}
   </div>
 }

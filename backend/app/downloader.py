@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 import os
 import shutil
 import sys
@@ -173,6 +175,13 @@ def _extract(options: dict[str, Any], url: str) -> dict[str, Any]:
         return ydl.sanitize_info(info)
 
 
+def _public_name(value):
+    """Uploader names only; some sites (archive.org) put the uploader's email address there."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return None if re.search(r"[^\s@]+@[^\s@]+\.[^\s@]+", value) else value
+
+
 def inspect_url(url: str) -> dict[str, Any]:
     options = {
         "quiet": True,
@@ -212,7 +221,7 @@ def inspect_url(url: str) -> dict[str, Any]:
     return {
         "id": info.get("id"),
         "title": info.get("title") or "Untitled media",
-        "uploader": info.get("uploader") or info.get("channel") or info.get("extractor_key"),
+        "uploader": _public_name(info.get("uploader") or info.get("channel")) or info.get("extractor_key"),
         "duration": info.get("duration"),
         "thumbnail": info.get("thumbnail"),
         "webpage_url": info.get("webpage_url") or url,
@@ -468,8 +477,37 @@ def build_options(job: Job, directory: Path, progress_hook=None, postprocessor_h
     if extras.get("embed_thumbnail") and job.container not in {"webm", "wav"}:
         options["writethumbnail"] = True
         postprocessors.append({"key": "EmbedThumbnail", "already_have_thumbnail": False})
+    if extras.get("split_chapters") and job.clip_start is None:
+        # 3.0: one extra file per chapter, cut from the finished file (the full file is kept as well).
+        options["outtmpl"] = {"default": options["outtmpl"],
+                              "chapter": str(directory / CHAPTER_FOLDER / "%(section_number)03d %(section_title).100B.%(ext)s")}
+        postprocessors.append({"key": "FFmpegSplitChapters", "force_keyframes": False})
     options["postprocessors"] = postprocessors
     return options
+
+
+CHAPTER_FOLDER = "chapters"
+
+
+def publish_chapters(directory: Path, final: Path) -> Path | None:
+    """Move split chapter files into "<final name> - chapters" beside the download."""
+    parts = directory / CHAPTER_FOLDER
+    if not parts.is_dir():
+        return None
+    pieces = sorted(p for p in parts.iterdir() if p.is_file() and p.suffix.lower() in MEDIA_EXTENSIONS)
+    if not pieces:
+        return None
+    folder = final.with_name(final.stem + " - chapters")
+    folder.mkdir(parents=True, exist_ok=True)
+    for piece in pieces:
+        target = folder / piece.name
+        number = 2
+        while target.exists():
+            target = folder / f"{piece.stem} ({number}){piece.suffix}"
+            number += 1
+        shutil.move(str(piece), str(target))
+    shutil.rmtree(parts, ignore_errors=True)
+    return folder
 
 
 def _without(options: dict[str, Any], *keys: str) -> None:
@@ -720,6 +758,7 @@ def run_download(job: Job) -> None:
                 if sidecar.is_file() and sidecar.suffix.lower() in {'.srt','.vtt','.ass','.lrc'}:
                     suffix=sidecar.name[len(result.stem):] if sidecar.name.startswith(result.stem) else '.'+sidecar.name
                     shutil.move(str(sidecar),str(final.with_name(final.stem+suffix)))
+            publish_chapters(directory, final)
             result = final
         try:
             size = result.stat().st_size

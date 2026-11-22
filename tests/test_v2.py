@@ -302,7 +302,7 @@ def test_batch_accepts_new_audio_formats_and_extras(tmp_path):
         assert response.status_code == 202, response.text
         created = response.json()['jobs'][0]
         assert created['container'] == 'flac' and created['download_options'] == {
-            'sponsorblock': 'mark', 'embed_thumbnail': True, 'embed_subtitles': False, 'audio_quality': 'best'}
+            'sponsorblock': 'mark', 'embed_thumbnail': True, 'embed_subtitles': False, 'audio_quality': 'best', 'split_chapters': False}
         rejected = client.post('/api/batch', json={'urls': ['https://example.com/song'], 'mode': 'audio', 'audio_container': 'exe'})
         assert rejected.status_code == 422
         rejected = client.post('/api/batch', json={'urls': ['https://example.com/song'], 'download_options': {'sponsorblock': 'all'}})

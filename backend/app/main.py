@@ -65,11 +65,18 @@ async def lifespan(application):
         except OSError:logging.getLogger('dropdl.storage').exception('Temporary cleanup failed')
     from . import subscriptions
     subscriptions.start(sys.modules[__name__])
+    from . import phone_link
+    try:phone_link.start_if_enabled()
+    except Exception:logging.getLogger('dropdl.phone').exception('Phone Link could not start')
     from . import engine_update
     if os.name=="nt":engine_update.start()
+    if os.getenv('DROPDL_SKIP_HARDWARE_PROBE')!='1':
+        from . import hardware
+        hardware.detect_in_background()   # GPU encoders are proven once and cached, before the first export
     yield
     subscriptions.stop.set()
     engine_update.stop.set()
+    phone_link.shutdown()
     executor.close();editor.close()
     jobs.checkpoint_for_shutdown()
 
@@ -125,6 +132,7 @@ class DownloadExtras(BaseModel):
     embed_thumbnail: bool = False
     embed_subtitles: bool = False
     audio_quality: str = Field(default="best", pattern="^(best|320|256|192|128)$")
+    split_chapters: bool = False
 
     def as_options(self):
         values = self.model_dump()
@@ -257,6 +265,8 @@ class SettingsRequest(BaseModel):
     auto_recover: bool = True
     auto_cleanup: bool = True
     keep_in_tray: bool = False
+    clipboard_watch: bool = True
+    notify_done: bool = True
     skip_duplicates: bool = False
     folder_rule: str = Field(default="none", pattern="^(none|creator|playlist|date|media_type)$")
     name_rule: str = Field(default="original", pattern="^(original|title|date_title)$")
@@ -606,6 +616,22 @@ app.include_router(browser_link.router)
 from . import support
 support.context=sys.modules[__name__]
 app.include_router(support.router)
+
+# 3.0: Phone Link and the built-in YouTube sign-in
+from . import phone_link
+phone_link.context=sys.modules[__name__]
+app.include_router(phone_link.router)
+from . import youtube_account
+youtube_account.context=sys.modules[__name__]
+app.include_router(youtube_account.router)
+# 3.0: Clip Studio projects without a source clip, smart tools, transcripts and GPU export
+from . import studio
+app.include_router(studio.router)
+
+@app.get('/api/hardware')
+def hardware_status():
+    from .hardware import summary
+    return summary()
 
 @app.get('/api/engine-update')
 def engine_update_status():

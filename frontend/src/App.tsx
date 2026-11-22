@@ -1,4 +1,5 @@
-import {DARK_ACCENTS,LIGHT_ACCENTS,DEFAULT_ACCENT} from './theme'
+import {DARK_ACCENTS,LIGHT_ACCENTS,DEFAULT_ACCENT,migrateAccent,onAccent} from './theme'
+migrateAccent()
 import {taskPhase,taskAdvice} from './reliability'
 import EngineUpdate from './EngineUpdate'
 import ClipTimeInput,{clipClock} from './ClipTimeInput'
@@ -7,15 +8,19 @@ import { API_BASE, archiveUrl, cancelDownload, createBatch, createClip, download
 import DownloadExtras, {useDownloadExtras} from './DownloadExtras'
 import NetworkPanel, {proxyValid} from './NetworkPanel'
 import {Language, TextKey, translate} from './i18n'
-import {Logo, Icon} from './visuals'
+import {Logo,Wordmark, Icon} from './visuals'
 import RightClickLayer from './RightClickLayer'
 import {openEditor} from './editorProject'
 import {AppearancePanel,designText} from './StudioDesign'
 import Tour from './Tour'
 import ClipTimeline from './ClipTimeline'
 import Workspace,{WorkspaceTab,workText} from './Workspace'
+import Connect from './Connect'
+import StudioHome from './StudioHome'
+import WhatsNew from './WhatsNew'
+import {createProject,openStudioProject} from './studioApi'
 import {QueueTools,PriorityControls,qText} from './QueueTools'
-import {pauseDownload,reorderQueue,queueControl} from './api'
+import {pauseDownload,reorderQueue,queueControl,sendToPhone} from './api'
 import {Confetti,ClipToast,Count,OverallBar,exportCsv,useClipboardWatch,useSpotlight,useSystemFeedback,ux2} from './upgrade2'
 import {CommandPalette,Command,DropOverlay,ShortcutsSheet,Sparkline,useUrlIntake,ux} from './upgrade'
 import TaskSelection,{selectionText} from './TaskSelection'
@@ -75,6 +80,7 @@ export default function App() {
   const [preferences,setPreferences] = useState<Preferences|null>(null)
   const [limit,setLimit] = useState('0')
   const [tour,setTour] = useState(() => readPreference('dropdl-tour-v1','') ? -1 : 0)
+  const [whatsNew,setWhatsNew] = useState(() => !!readPreference('dropdl-tour-v1','') && readPreference('dropdl-whats-new','') !== '3.0.0')
   const modal = useRef<HTMLDivElement>(null)
   const [theme, setTheme] = useState(() => readPreference('dropdl-theme','dark') === 'light' ? 'light' : 'dark')
   const [accent, setAccent] = useState<Accent>(() => {const a=readPreference('dropdl-accent',DEFAULT_ACCENT); return a in accents ? a as Accent : DEFAULT_ACCENT})
@@ -139,7 +145,7 @@ export default function App() {
   useEffect(() => {void getPreferences().then(p=>{setPreferences(p);setLimit(String(p.speed_limit_kbps));setGlobalLimit(String(p.global_speed_limit_kbps||0));setDuplicateSkip(p.skip_duplicates===true)}).catch(()=>{})},[])
   useEffect(() => {
     const keys = (e:KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='n') {e.preventDefault();setComposer(true)}
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='n') {e.preventDefault();if(e.shiftKey)window.dispatchEvent(new Event('dropdl-new-project'));else setComposer(true)}
       if(e.key==='Escape' && tour < 0) {setComposer(false);setSettingsOpen(false)}
       const target=e.target as HTMLElement|null
       const typing=!!target&&(['INPUT','TEXTAREA','SELECT'].includes(target.tagName)||target.isContentEditable)
@@ -165,7 +171,9 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    document.documentElement.style.setProperty('--accent', (theme==='light'?lightAccents:accents)[accent])
+    const color=(theme==='light'?lightAccents:accents)[accent]
+    document.documentElement.style.setProperty('--accent', color)
+    document.documentElement.style.setProperty('--on-accent', onAccent(color))
     document.documentElement.style.colorScheme = theme
     try {localStorage.setItem('dropdl-theme', theme); localStorage.setItem('dropdl-accent', accent)} catch { /* Preferences remain usable in this session. */ }
   }, [theme, accent])
@@ -211,7 +219,18 @@ export default function App() {
   const completed = jobs.filter(j => j.status === 'completed' && j.purpose !== 'preview')
   const batches = [...new Set(completed.map(j => j.batch_id).filter((id): id is string => !!id))]
   const totalSpeed = activeJobs.reduce((sum,j)=>sum+(j.speed||0),0)
-  useSystemFeedback(jobs,totalSpeed,pref.sound,pref.notify)
+  useSystemFeedback(jobs,totalSpeed,pref.sound,pref.notify&&preferences?.notify_done!==false,lang)
+  // 3.0: the desktop window process offers copied links and focuses tasks from notifications
+  useEffect(()=>{
+    window.dropdlClipboard=(url:string)=>{if(tour<0)setClipUrl(url)}
+    window.dropdlFocusJob=(id:string)=>{setPalette(false);setSettingsOpen(false);setComposer(false);setWorkspace('downloads');setDetailId(id)}
+    return()=>{delete window.dropdlClipboard;delete window.dropdlFocusJob}
+  },[tour])
+  useEffect(()=>{
+    if(!preferences)return
+    const apply=()=>void window.pywebview?.api?.configure_clipboard?.(preferences.clipboard_watch!==false,lang).catch(()=>{})
+    apply();window.addEventListener('pywebviewready',apply);return()=>window.removeEventListener('pywebviewready',apply)
+  },[preferences?.clipboard_watch,lang,!!preferences])
   useClipboardWatch(pref.clip&&tour<0,setClipUrl)
   useEffect(()=>{const n=activeJobs.length;if(wasActive.current>0&&n===0&&completed.length>wasDone.current){wasDone.current=completed.length;setCelebrate(true);const id=setTimeout(()=>setCelebrate(false),3600);wasActive.current=n;return()=>clearTimeout(id)}wasDone.current=Math.max(wasDone.current,completed.length>0&&wasActive.current===0?completed.length:wasDone.current);wasActive.current=n},[activeJobs.length])
   const totalSaved = completed.reduce((sum,j)=>sum+(j.total_bytes||j.downloaded_bytes||0),0)
@@ -342,7 +361,10 @@ export default function App() {
   const pageJobs=filtered.slice(page*100,(page+1)*100)
   const detail=downloadJobs.find(j=>j.id===detailId)
   const statusText=(status:string)=>['paused','pausing','converting'].includes(status)?qText(lang,status as 'paused'|'pausing'|'converting'):t(({queued:'taskQueued',starting:'taskStarting',downloading:'taskDownloading',processing:'taskProcessing',clipping:'taskClipping',preparing_preview:'taskPreparing',completed:'completed',failed:'taskFailed',cancelled:'taskCancelled',cancelling:'taskCancelling'} as Record<string,TextKey>)[status]||'taskQueued')
-  function finishTour(){setTour(-1);setComposer(false);try{localStorage.setItem('dropdl-tour-v1','done')}catch{};document.getElementById('tour-add')?.focus()}
+  function closeWhatsNew(){setWhatsNew(false);try{localStorage.setItem('dropdl-whats-new','3.0.0')}catch{}}
+  // The showcase never sits on top of real work: opening a download, Preferences or the palette dismisses it for good.
+  useEffect(()=>{if(whatsNew&&(composer||settingsOpen||palette))closeWhatsNew()},[composer,settingsOpen,palette])
+  function finishTour(){setTour(-1);setComposer(false);try{localStorage.setItem('dropdl-tour-v1','done');localStorage.setItem('dropdl-whats-new','3.0.0')}catch{};document.getElementById('tour-add')?.focus()}
   function moveTour(step:number){setWorkspace('downloads');setComposer(step>0&&step<5);setSettingsOpen(false);setTour(step)}
   async function chooseFolder(){await act('Folder',async()=>{if(!window.pywebview?.api)throw Error(t('folderFail'));const p=await window.pywebview.api.choose_folder();if(p){setPreferences(p);setLimit(String(p.speed_limit_kbps))}})}
   async function setGrouping(enabled:boolean){if(!preferences)return;await act('Preferences',async()=>setPreferences(await savePreferences({...preferences,group_by_site:enabled})))}
@@ -374,6 +396,8 @@ export default function App() {
   const dragging=useUrlIntake(intake,tour<0&&!palette)
   async function copyLinks(list:Job[]){await act('Copy',async()=>{await navigator.clipboard.writeText(list.map(j=>j.url).join('\n'));setQueueMessage(`${list.length} ${ux(lang,'copiedLinks')}`)})}
   const L=(en:string,ar:string)=>lang==='ar'?ar:en
+  async function newStudioProject(aspect='16:9'){try{const record=await createProject({aspect});await openStudioProject(record.id,lang);window.dispatchEvent(new Event('dropdl-studio-changed'))}catch(e){setError(String(e instanceof Error?e.message:e))}}
+  useEffect(()=>{const create=()=>void newStudioProject();window.addEventListener('dropdl-new-project',create);return()=>window.removeEventListener('dropdl-new-project',create)},[lang])
   const selectedJobs=downloadJobs.filter(j=>taskSelection.has(j.id))
   const commands:Command[]=[
     {id:'new',group:'group_actions',icon:'plus',label:t('newDownload'),hint:'Ctrl N',keywords:'add url link download',run:()=>{setWorkspace('downloads');setSettingsOpen(false);setComposer(true)}},
@@ -386,6 +410,10 @@ export default function App() {
     ...(preferences?.native_folder_picker?[{id:'folder',group:'group_actions' as const,icon:'folder',label:L('Open download folder','فتح مجلد التنزيل'),keywords:'explorer directory',run:()=>void openFolder()}]:[]),
     ...['all','active','completed','attention','video','audio'].map(v=>({id:`view-${v}`,group:'group_navigate' as const,icon:v,label:t(v as TextKey),keywords:'queue list',run:()=>{setWorkspace('downloads');setView(v)}})),
     ...(['convert','studio','library'] as const).map(section=>({id:`tool-${section}`,group:'group_navigate' as const,icon:section==='library'?'folder':section==='convert'?'convert':'scissors',label:workText(lang,section),keywords:'tool workspace',run:()=>{setComposer(false);setSettingsOpen(false);setWorkspace(section)}})),
+    {id:'whats-new',group:'group_navigate',icon:'bolt',label:L("What's new in DropDL 3.0",'الجديد في DropDL 3.0'),keywords:'release notes changes features update',run:()=>setWhatsNew(true)},
+    {id:'new-project',group:'group_actions',icon:'scissors',label:L('New Clip Studio project','مشروع جديد في استوديو القص'),keywords:'edit editor video create empty blank studio clip montage ctrl shift n',run:()=>void newStudioProject()},
+    {id:'new-vertical',group:'group_actions',icon:'scissors',label:L('New vertical project (Shorts, Reels, TikTok)','مشروع عمودي جديد (شورتس، ريلز، تيك توك)'),keywords:'edit 9:16 portrait reel short tiktok',run:()=>void newStudioProject('9:16')},
+    {id:'tool-connect',group:'group_navigate',icon:'phone',label:workText(lang,'connect'),keywords:'phone link mobile youtube sign in cookies clipboard notifications extension subscriptions',run:()=>{setComposer(false);setSettingsOpen(false);setWorkspace('connect')}},
     {id:'prefs',group:'group_navigate',icon:'settings',label:t('preferences'),keywords:'settings options',run:()=>{setComposer(false);setSettingsOpen(true)}},
     {id:'theme',group:'group_appearance',icon:theme==='dark'?'sun':'moon',label:theme==='dark'?L('Switch to light theme','التبديل إلى السمة الفاتحة'):L('Switch to dark theme','التبديل إلى السمة الداكنة'),keywords:'appearance mode',run:()=>setTheme(theme==='dark'?'light':'dark')},
     {id:'lang',group:'group_appearance',icon:'globe',label:lang==='ar'?'Switch to English':'التبديل إلى العربية',keywords:'language arabic english rtl',run:()=>setLang(lang==='ar'?'en':'ar')},
@@ -424,7 +452,7 @@ export default function App() {
   const taskCard=(job:Job)=><article key={job.id} className={`task-card ${detailId===job.id?'focused':''} ${taskSelection.has(job.id)?'selected':''}`} data-job-id={job.id} data-status={job.status} tabIndex={0} draggable={job.status==='queued'} onDragStart={()=>setDragged(job.id)} onDragOver={e=>{if(job.status==='queued')e.preventDefault()}} onDrop={e=>{e.preventDefault();if(dragged&&job.status==='queued'){const ids=filtered.filter(j=>j.status==='queued').map(j=>j.id).filter(id=>id!==dragged);ids.splice(ids.indexOf(job.id),0,dragged);void act('Reorder',async()=>{await reorderQueue(ids);setSort('priority');setJobs((await getJobs()).jobs)})}setDragged(null)}} onClick={e=>{if(!(e.target as HTMLElement).closest('button,a,input,label'))setDetailId(job.id)}} onKeyDown={e=>{if(e.key==='Enter'&&e.target===e.currentTarget)setDetailId(job.id)}}>
     <label className="selection-cell task-select"><input type="checkbox" aria-label={`${sw('select')}: ${job.title||job.url}`} checked={taskSelection.has(job.id)} disabled={!taskSelection.has(job.id)&&taskSelection.size>=500} onChange={e=>setTaskSelection(old=>{const next=new Set(old);e.target.checked?next.add(job.id):next.delete(job.id);return next})}/></label>
     <div className={`task-thumb ${job.kind}`}><Icon name={job.kind} size={22}/>{thumbFor(job)&&<img loading="lazy" draggable={false} referrerPolicy="no-referrer" src={thumbFor(job)} alt="" onError={e=>{if(job.status==='completed'&&!e.currentTarget.dataset.fallback){e.currentTarget.dataset.fallback='1';e.currentTarget.src=`${API_BASE}/api/jobs/${job.id}/poster`}else e.currentTarget.style.display='none'}}/>}<span className="task-kind"><Icon name={job.kind} size={11}/></span></div>
-    <div className="task-main"><button className="file-title" dir="auto" title={job.title||job.url} onClick={()=>setDetailId(job.id)}>{job.title||job.filename||job.url}</button><small className="task-meta" dir="auto">{hostOf(job)}<span> · {job.container.toUpperCase()} · {job.purpose==='preview'?t('preview'):job.quality==='best'?t('best'):job.quality}</span></small>{!terminal(job)&&job.phase!=='downloading'&&taskPhase(job,lang)&&<small className="task-phase">{taskPhase(job,lang)}</small>}{job.interrupted&&<small className="task-phase">{L('Recovered; ready to resume','تمت الاستعادة؛ جاهز للاستئناف')}</small>}</div>
+    <div className="task-main"><button className="file-title" dir="auto" title={job.title||job.url} onClick={()=>setDetailId(job.id)}>{job.title||job.filename||job.url}</button><small className="task-meta" dir="auto">{job.origin?.startsWith('phone:')&&<span className="origin-badge" title={L('Started from a phone with Phone Link','بدأ من هاتف عبر ربط الهاتف')}><Icon name="phone" size={11}/>{L('From a phone','من هاتف')}</span>}{hostOf(job)}<span> · {job.container.toUpperCase()} · {job.purpose==='preview'?t('preview'):job.quality==='best'?t('best'):job.quality}</span></small>{!terminal(job)&&job.phase!=='downloading'&&taskPhase(job,lang)&&<small className="task-phase">{taskPhase(job,lang)}</small>}{job.interrupted&&<small className="task-phase">{L('Recovered; ready to resume','تمت الاستعادة؛ جاهز للاستئناف')}</small>}</div>
     <div className="task-status"><span className={`status-badge ${job.status}`}>{statusText(job.status)}</span></div>
     <div className="task-progress">{progressOf(job)}</div>
     <div className="row-actions">{taskActions(job)}</div>
@@ -449,13 +477,13 @@ export default function App() {
     {['queued','paused'].includes(detail.status)&&<PriorityControls key={detail.id} job={detail} lang={lang} refresh={()=>void getJobs().then(data=>setJobs(data.jobs))} onError={setError}/>}
     {taskAdvice(detail,lang)&&<p className="recovery-note">{taskAdvice(detail,lang)}</p>}
     {detail.error&&<p className="job-error" dir="auto">{detail.error==='Interrupted by an app restart. Retry to continue.'?t('restartError'):detail.error.replace(/\x1b\[[0-9;]*m/g,'')}</p>}
-    <div className="button-row"><button className="secondary" onClick={()=>void copyLink(detail)}><Icon name="link" size={16}/>{t('copyLink')}</button>{detail.status==='completed'&&<a className="secondary link-button" href={downloadUrl(detail.id)}><Icon name="down" size={16}/>{t('save')}</a>}</div>
+    <div className="button-row"><button className="secondary" onClick={()=>void copyLink(detail)}><Icon name="link" size={16}/>{t('copyLink')}</button>{detail.status==='completed'&&<a className="secondary link-button" href={downloadUrl(detail.id)}><Icon name="down" size={16}/>{t('save')}</a>}{detail.status==='completed'&&detail.purpose==='download'&&<button className="secondary" onClick={()=>void act('Send to phone',async()=>{const r=await sendToPhone({job_id:detail.id});setQueueMessage(r.devices?L('Sent. It is waiting on your phone under Activity.','تم الإرسال. ينتظرك على الهاتف في «النشاط».'):L('Saved for your phone. Pair one in Connect to pick it up.','حُفظ لهاتفك. اربط هاتفًا من «اتصال» لاستلامه.'))})}><Icon name="send" size={16}/>{L('Send to phone','أرسل إلى الهاتف')}</button>}</div>
   </div>
   return <div className={`cc-app ${pref.collapsed?'collapsed':''}`} dir={lang==='ar'?'rtl':'ltr'}>
     <nav className="cc-rail" aria-label={L('Main navigation','التنقل الرئيسي')}>
       <div className="rail-logo" title="DropDL Studio"><Logo/></div>
       <button className={`rail-item ${workspace==='downloads'?'selected':''}`} onClick={()=>{setComposer(false);setSettingsOpen(false);setWorkspace('downloads')}}><span className="rail-icon"><Icon name="down"/>{activeJobs.length>0&&<b className="rail-badge">{activeJobs.length}</b>}</span><span className="rail-label">{t('downloads')}</span></button>
-      <div className="workspace-nav">{(['convert','studio','library'] as const).map(section=><button key={section} className={`rail-item nav-tool ${workspace===section?'selected':''}`} onClick={()=>{setComposer(false);setSettingsOpen(false);setWorkspace(section)}}><span className="rail-icon"><Icon name={section==='library'?'folder':section==='convert'?'convert':'scissors'}/></span><span className="rail-label">{section==='library'?L('Library','المكتبة'):section==='studio'?L('Studio','الاستوديو'):workText(lang,section)}</span></button>)}</div>
+      <div className="workspace-nav">{(['convert','studio','library'] as const).map(section=><button key={section} className={`rail-item nav-tool ${workspace===section?'selected':''}`} onClick={()=>{setComposer(false);setSettingsOpen(false);setWorkspace(section)}}><span className="rail-icon"><Icon name={section==='library'?'folder':section==='convert'?'convert':'scissors'}/></span><span className="rail-label">{section==='library'?L('Library','المكتبة'):section==='studio'?L('Studio','الاستوديو'):workText(lang,section)}</span></button>)}</div><button className={`rail-item nav-tool nav-connect ${workspace==='connect'?'selected':''}`} onClick={()=>{setComposer(false);setSettingsOpen(false);setWorkspace('connect')}}><span className="rail-icon"><Icon name="phone"/></span><span className="rail-label">{workText(lang,'connect')}</span></button>
       <div className="rail-spacer"/>
       <button className="rail-item" aria-label={t('appearance')} title={t('appearance')} onClick={()=>setTheme(theme==='dark'?'light':'dark')}><span className="rail-icon"><Icon name={theme==='dark'?'sun':'moon'}/></span><span className="rail-label">{theme==='dark'?L('Light','فاتح'):L('Dark','داكن')}</span></button>
       <button className={`rail-item nav-tool ${settingsOpen?'selected':''}`} onClick={()=>{setComposer(false);setSettingsOpen(true)}}><span className="rail-icon"><Icon name="settings"/></span><span className="rail-label">{t('preferences')}</span></button>
@@ -463,13 +491,13 @@ export default function App() {
     </nav>
     <div className="cc-main">
       <header className="cc-topbar">
-        <div className="manager-header"><h1>{pageTitle}</h1><small>DropDL Studio</small></div>
+        <div className="manager-header"><h1>{pageTitle}</h1><small><Wordmark/></small></div>
         <form className="smart-bar" onSubmit={submitSmart} role="search">
           <Icon name={smartUrls(smart).length?'link':'search'} size={17}/>
           <input id="queue-search" aria-label={L('Paste a link, search downloads, or press Enter for commands','الصق رابطًا أو ابحث في التنزيلات أو اضغط Enter للأوامر')} placeholder={L('Paste a link to download, or search…','الصق رابطًا للتنزيل أو ابحث…')} value={smart} onChange={e=>changeSmart(e.target.value)} onKeyDown={e=>{if(e.key==='Escape'&&smart){e.stopPropagation();changeSmart('')}}} dir="auto" autoComplete="off" spellCheck={false}/>
           {smartUrls(smart).length>0?<button className="primary compact" type="submit"><Icon name="down" size={15}/>{smartUrls(smart).length>1?L(`Add ${smartUrls(smart).length} links`,`إضافة ${smartUrls(smart).length} روابط`):L('Download','تنزيل')}</button>:<button type="button" className="smart-commands" onClick={()=>setPalette(true)} aria-label={ux(lang,'paletteTitle')}><kbd>Ctrl K</kbd></button>}
         </form>
-        <div className="header-tools"><EngineUpdate lang={lang}/><select aria-label={t('language')} value={lang} onChange={e=>setLang(e.target.value as Language)}><option value="en">EN</option><option value="ar">ع</option></select><button id="tour-add" className="primary new-download" onClick={()=>{setWorkspace('downloads');setSettingsOpen(false);setComposer(true)}}><Icon name="plus" size={17}/><span>{t('newDownload')}</span></button></div>
+        <div className="header-tools"><EngineUpdate lang={lang}/><select aria-label={t('language')} value={lang} onChange={e=>setLang(e.target.value as Language)}><option value="en">EN</option><option value="ar">ع</option></select><button className="secondary new-project" title={L('New Clip Studio project · Ctrl+Shift+N','مشروع جديد في استوديو القص · Ctrl+Shift+N')} onClick={()=>void newStudioProject()}><Icon name="scissors" size={16}/><span>{L('New project','مشروع جديد')}</span></button><button id="tour-add" className="primary new-download" onClick={()=>{setWorkspace('downloads');setSettingsOpen(false);setComposer(true)}}><Icon name="plus" size={17}/><span>{t('newDownload')}</span></button></div>
       </header>
       <div className="cc-banners">
       {error&&!(composer||settingsOpen)&&<div className="error-card" role="alert"><div><strong>{t('error')}</strong><p dir="auto">{error.replace(/\x1b\[[0-9;]*m/g,'')}</p></div><button className="ghost compact" onClick={()=>setError('')}>{t('dismiss')}</button></div>}
@@ -493,7 +521,8 @@ export default function App() {
           {filtered.length>100&&<div className="list-bottom"><div className="queue-pagination"><button className="secondary compact" disabled={page===0} onClick={()=>setQueuePage(page-1)}>{t('previousPage')}</button><span dir="ltr">{page*100+1}–{Math.min((page+1)*100,filtered.length)}</span><button className="secondary compact" disabled={(page+1)*100>=filtered.length} onClick={()=>setQueuePage(page+1)}>{t('nextPage')}</button></div></div>}
         </section>
         <aside className="cc-inspector" aria-label={L('Inspector','لوحة التفاصيل')}>{detailPanel||overviewPanel}</aside>
-      </div>:<div className="cc-workspace"><Workspace onPlay={playMedia} tab={workspace} setTab={setWorkspace} lang={lang} jobs={jobs} onLink={link=>{acceptURL(link);setWorkspace('downloads');setComposer(true)}} onQueued={()=>void getJobs().then(data=>setJobs(data.jobs))} onPreview={job=>{setPlayback(null);void act('Open editor',()=>openEditor(job.id,lang))}}/></div>}
+      </div>:workspace==='connect'?<div className="cc-workspace cc-connect"><Connect lang={lang} preferences={preferences} onPreferences={async changes=>{if(!preferences)return;setPreferences(await savePreferences({...preferences,...changes}))}} onLink={link=>{acceptURL(link);setWorkspace('downloads');setComposer(true)}}/></div>
+      :<div className={`cc-workspace ${workspace==='studio'?'cc-studio':''}`}>{workspace==='studio'&&<StudioHome lang={lang} jobs={jobs} onError={setError} startDownload={async url=>{const result=await createBatch([url],{mode:'video',video_container:videoFormat,audio_container:audioFormat,quality:'best',skip_duplicates:false});if(!result.jobs[0])throw Error(L('That link could not be added.','تعذرت إضافة هذا الرابط.'));setJobs((await getJobs()).jobs);return result.jobs[0]}}/>}<Workspace onPlay={playMedia} tab={workspace} setTab={setWorkspace} lang={lang} jobs={jobs} onLink={link=>{acceptURL(link);setWorkspace('downloads');setComposer(true)}} onQueued={()=>void getJobs().then(data=>setJobs(data.jobs))} onPreview={job=>{setPlayback(null);void act('Open editor',()=>openEditor(job.id,lang))}}/></div>}
       <footer className="cc-status" role="contentinfo">
         <span className={`status-engine ${health?'connected':''}`}><i/>{t(health?'connected':'connecting')}</span>
         <span dir="ltr" className={totalSpeed>0?'live':''}><Icon name="down" size={13}/>{totalSpeed>0?`${bytes(totalSpeed)}/s`:L('Idle','خامل')}</span>
@@ -524,6 +553,7 @@ export default function App() {
     <div className="drawer-footer"><span>{clip?<><bdi>{clock(start)} – {clock(end)}</bdi></>:t('completeMedia')} · {urls.length} {t('queuedSources')}</span><button className="primary" disabled={!!busy||!!pendingPreview||!health?.ffmpeg||((clip||source)&&!health?.ffprobe)||(!source&&!urls.length)||(clip&&!validClip)} onClick={()=>void download()}><Icon name="down" size={18}/>{busy==='Queue downloads'||busy==='Export clip'?t('adding'):t(source?'export':'queue')}</button></div></>}
     {previewIndicator}</div></div>}
     {palette&&<CommandPalette lang={lang} commands={commands} onClose={()=>setPalette(false)} onUrls={intake}/>}
+    {whatsNew&&tour<0&&!palette&&!composer&&!settingsOpen&&<WhatsNew lang={lang} onClose={closeWhatsNew} onStudio={()=>{setComposer(false);setSettingsOpen(false);setWorkspace('studio')}} onNewProject={()=>void newStudioProject()}/>}
     {shortcuts&&<ShortcutsSheet lang={lang} onClose={()=>setShortcuts(false)}/>}
     {dragging&&<DropOverlay lang={lang}/>}
     {celebrate&&<Confetti lang={lang}/>}

@@ -43,7 +43,7 @@ export function trimClip(p:EditProject,index:number,edge:'start'|'end',delta:num
 export function snapPosition(p:EditProject,seconds:number,clipDuration:number,index:number,playhead:number,pixelsPerSecond:number,enabled:boolean,frames=false){
  let value=Math.max(0,seconds);if(frames)value=Math.round(value*(p.fps||30))/(p.fps||30)
  if(!enabled)return {value,target:null as number|null}
- const targets=[0,playhead,...positioned(p).segments.flatMap((s,i)=>i===index?[]:[s.offset!,s.offset!+length(s)])]
+ const targets=[0,playhead,...(p.beats||[]),...(p.markers||[]).map(m=>m.t),...positioned(p).segments.flatMap((s,i)=>i===index?[]:[s.offset!,s.offset!+length(s)])]
  const proposed=value;let best=8/Math.max(.001,pixelsPerSecond),target:number|null=null
  for(const candidate of targets)for(const correction of [candidate-proposed,candidate-(proposed+clipDuration)])if(Math.abs(correction)<best&&proposed+correction>=0){best=Math.abs(correction);target=candidate;value=Math.max(0,proposed+correction)}
  return {value,target}

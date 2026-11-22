@@ -1,6 +1,6 @@
 {
-  "version": "2.3.0",
-  "backend_tests_passed": 232,
+  "version": "3.0.0",
+  "backend_tests_passed": 276,
   "backend_tests_skipped": 1,
   "test_platform": "Windows 11, Python 3.12",
   "ui_checks": [
@@ -14,7 +14,10 @@
     "command-center shell: smart bar filtering and link detection, task cards, inspector open/close (jsdom, EN/AR)",
     "headless Edge 1440x900 review: downloads, inspector, add-download sheet, preferences, convert, library, live download, editor; EN/AR, dark/light",
     "real-browser suites on Microsoft Edge: editor, library, player",
-    "pro editor timecode model check"
+    "pro editor timecode model check",
+    "3.0 Connect hub in the browser pane at 1440x900: Phone Link on/off, QR code and pairing code, adapter chips, paired phones, YouTube and helper cards; English and Arabic RTL",
+    "Phone Link page at 375x812: pairing (wrong code refused, QR link pairs), link preview, download started on the phone and run on the PC, live progress, play in the phone player, save to phone (27 MB file intact), Send to phone from the PC",
+    "QR encoder checked against the standard's Reed-Solomon, format and version reference values; every version 1-10 and level L/M/Q/H read back by an independent reader"
   ],
   "native_backend_e2e_on_windows": [
     "SoundCloud MP3 192 kbps / FLAC / Opus with embedded cover art",
@@ -22,12 +25,18 @@
     "archive.org MP4 healed from incompatible Theora source",
     "hard-killed backend: worker self-exit and resume from partial file",
     "editor export at source 24 FPS (H.264 24/1)",
-    "ICO frames decoded by System.Drawing 16-256 px"
+    "ICO frames decoded by System.Drawing 16-256 px",
+    "WebView2 cookie read/delete through pythonnet in a real hidden window (HttpOnly value intact), three runs",
+    "DropDL's YouTube sign-in window opened through the bridge to accounts.google.com; anonymous session correctly not treated as signed in",
+    "Windows notification shown through the notification-area icon",
+    "network adapters listed through GetAdaptersAddresses in 28 ms; Wi-Fi with the default gateway ranked first, VPN labelled, Hyper-V switch ignored"
   ],
   "not_verified": [
-    "YouTube downloads (bot check from test IP)",
-    "packaged WebView2 window and tray icon",
-    "running DropDL-Setup.exe end-to-end (not executed here to avoid upgrading the user's live 1.0.2 install)"
+    "Signing in to YouTube with a real Google account in the sign-in window (needs the user's sign-in; Google may refuse embedded browsers, in which case Import cookies.txt remains)",
+    "A real phone on the same Wi-Fi (tests used the browser pane at phone size on this PC)",
+    "The Windows firewall prompt when Phone Link first listens on the network",
+    "The copied-link catcher against the real clipboard (tested with a fake clipboard so the user's clipboard was never read or changed)",
+    "running DropDL-Setup.exe end-to-end (not executed here to avoid upgrading the user's live install)"
   ],
   "native_windows_tested": "backend and browser UI only",
   "installer_compiled": true,

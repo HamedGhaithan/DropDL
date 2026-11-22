@@ -70,4 +70,5 @@ jobs:
           npm run test:timeline
           npm run test:fps
           npm run test:pro
+          npm run test:studio
           node ../tests/clip-time.cjs
