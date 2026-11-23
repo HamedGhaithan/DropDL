@@ -26,6 +26,12 @@ for tool in ffmpeg ffprobe node; do
   echo "   $tool runs without Homebrew: $path"
 done
 
+FFMPEG_BIN="$(find "$APP/Contents" -type f -name ffmpeg | head -1)"
+for filter in subtitles drawtext; do
+  "$FFMPEG_BIN" -hide_banner -filters 2>/dev/null | grep -qE " $filter " || { echo "The bundled FFmpeg lacks the $filter filter (captions and titles would fail). Build with ffmpeg-full." >&2; exit 1; }
+done
+echo "   bundled FFmpeg can burn captions and titles"
+
 echo "== 2. Sign for local use (ad hoc: no Apple Developer certificate)"
 codesign --force --deep --sign - "$APP"
 codesign --verify --deep --strict "$APP"

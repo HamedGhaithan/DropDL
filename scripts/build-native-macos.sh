@@ -12,6 +12,7 @@ PYTHON_BIN="${DROPDL_BUILD_PYTHON:-python3}"
 for tool in ffmpeg ffprobe node; do
   command -v "$tool" >/dev/null || { echo "Install $tool first (see MACOS.md)." >&2; exit 1; }
 done
+ffmpeg -hide_banner -filters 2>/dev/null | grep -q " subtitles " || { echo "This FFmpeg cannot burn captions. Use the full build: brew install ffmpeg-full and put $(brew --prefix ffmpeg-full 2>/dev/null || echo its prefix)/bin first on PATH." >&2; exit 1; }
 node -e 'if(Number(process.versions.node.split(".")[0])<22)process.exit(1)' || { echo "Node.js 22+ is required." >&2; exit 1; }
 [[ -f frontend/dist/index.html ]] || { echo "Build the frontend first." >&2; exit 1; }
 "$PYTHON_BIN" -m venv .venv-macos-build
