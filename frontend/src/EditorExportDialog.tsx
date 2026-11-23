@@ -29,7 +29,7 @@ export function exportDimensions(p:EditProject,source:{width?:number;height?:num
  else if(p.height){width=width/height*p.height;height=p.height}
  return {width:Math.max(2,Math.floor(width/2)*2),height:Math.max(2,Math.floor(height/2)*2)}
 }
-const GPU_NAMES:Record<string,string>={h264_nvenc:'NVIDIA NVENC',hevc_nvenc:'NVIDIA NVENC',h264_amf:'AMD AMF',hevc_amf:'AMD AMF',h264_qsv:'Intel Quick Sync',hevc_qsv:'Intel Quick Sync'}
+const GPU_NAMES:Record<string,string>={h264_nvenc:'NVIDIA NVENC',hevc_nvenc:'NVIDIA NVENC',h264_amf:'AMD AMF',hevc_amf:'AMD AMF',h264_qsv:'Intel Quick Sync',hevc_qsv:'Intel Quick Sync',h264_videotoolbox:'Apple VideoToolbox',hevc_videotoolbox:'Apple VideoToolbox'}
 export default function EditorExportDialog({project,lang,sources,sourceId,commit,close,start,busy}:{project:EditProject;lang:string;sources:Record<string,{video?:boolean;width?:number;height?:number;audio?:boolean;fps?:number}>;sourceId:string;commit:(p:EditProject)=>void;close:()=>void;start:()=>void;busy:boolean}){
  const w=(en:string,ar:string)=>lang==='ar'?ar:en,format=project.export_format||'mp4',hasVideo=project.segments.some(s=>sources[s.source_job_id||sourceId]?.video),audio=['mp3','m4a','wav'].includes(format)||!hasVideo,actualFormat=audio&&!['mp3','m4a','wav'].includes(format)?'mp3':format,total=outputDuration(project),first=project.segments.find(s=>sources[s.source_job_id||sourceId]?.video),size=first?exportDimensions(project,sources[first.source_job_id||sourceId]||{}):null
  const [folder,setFolder]=useState(''),[folderBusy,setFolderBusy]=useState(true),[folderError,setFolderError]=useState(''),[hardware,setHardware]=useState<Hardware|null>(null)

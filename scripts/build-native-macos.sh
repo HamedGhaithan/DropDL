@@ -29,7 +29,8 @@ BUILD_PYTHON="$ROOT/.venv-macos-build/bin/python"
   --add-binary "$(command -v ffprobe):bin" \
   --add-binary "$(command -v node):bin" \
   --collect-all yt_dlp --collect-all yt_dlp_ejs --collect-all webview \
-  --collect-all uvicorn --exclude-module PyQt5 --exclude-module PyQt6 \
+  --collect-all uvicorn --hidden-import app.mac_native --hidden-import UserNotifications \
+  --hidden-import AppKit --hidden-import WebKit --hidden-import PyObjCTools.AppHelper --exclude-module PyQt5 --exclude-module PyQt6 \
   --exclude-module PySide2 --exclude-module PySide6 backend/desktop.py
 echo "Built: $ROOT/dist/DropDLStudio.app"
 echo "Test the complete bundle on a clean Mac before distributing it. See MACOS.md."

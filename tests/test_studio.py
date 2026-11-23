@@ -501,3 +501,12 @@ def test_youtube_word_timings_are_kept():
     segments = transcripts.parse(ROLLING)
     assert segments[0]['words'] == [.32, .64, 1.12, 1.36] and segments[1]['words'] == [2.879, 3.12, 3.36]
     assert 'words' not in transcripts.parse('1\n00:00:01,000 --> 00:00:02,000\nplain line\n')[0]
+
+
+def test_apple_videotoolbox_counts_as_a_gpu_encoder():
+    from app import hardware
+    flags = hardware.video_flags('h264_videotoolbox', 20)
+    assert flags[:2] == ['-c:v', 'h264_videotoolbox'] and flags[flags.index('-q:v') + 1] == '66'
+    assert '-b:v' in hardware.video_flags('hevc_videotoolbox', 20, bitrate=4_000_000)
+    assert hardware.is_hardware('h264_videotoolbox') and hardware.VENDOR['videotoolbox'] == 'Apple'
+    assert hardware.CANDIDATES['h264'][0] == 'h264_videotoolbox'      # only proven encoders are ever used
