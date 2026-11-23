@@ -26,3 +26,11 @@ Screenshots in `docs/media` show *Big Buck Bunny* (© Blender Foundation, CC BY 
 - Strings: [VSCO 2 Community Edition](https://github.com/sgossner/VSCO-2-CE), CC0.
 - Bass: [Bass Guitar YR](https://freepats.zenvoid.org/) from FreePats, CC0.
 - Music composition, sound effects and animation are original to this project and released under the MIT License with the rest of the repository.
+
+## macOS app bundle
+
+The Mac DMGs bundle binaries from Homebrew: **FFmpeg** (the `ffmpeg-full` formula, built with GPL-licensed
+components such as x264, so the bundled FFmpeg is distributed under the GPL), its libraries, and **Node.js** (MIT).
+FFmpeg source code: https://ffmpeg.org/download.html ; the exact build recipe is the Homebrew `ffmpeg-full`
+formula: https://formulae.brew.sh/formula/ffmpeg-full . DropDL itself stays MIT-licensed; it runs FFmpeg as a
+separate program and does not link to it.

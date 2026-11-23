@@ -127,6 +127,7 @@ DropDL 3.0 turns the editor into a studio of its own and reaches beyond the PC. 
 - The browser extension inbox and playlist/channel subscriptions moved to Connect, where they are easier to find.
 - Uploaders whose name is an email address (some archive.org items) are no longer shown, on the PC or the phone.
 - New command-palette entry: **Connect**.
+- **macOS app** for Apple Silicon and Intel: YouTube sign-in through WebKit, the copied-link catcher on the macOS pasteboard, Notification Center notifications, GPU export with Apple VideoToolbox, and a full FFmpeg so captions render. Built and launch-tested on Mac runners for every change.
 - Fixed: choosing **Download** on a copied-link notification (or any DropDL notification) could freeze the whole window. Actions from notifications and the YouTube sign-in window now run without blocking the interface.
 
 ## 2.3.0 — a professional editing workspace
