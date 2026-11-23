@@ -1,21 +1,31 @@
-# macOS build target — 1.0.0
+# macOS — 3.0.0
 
-The Windows release is the packaged deliverable. This release also includes an
-**experimental macOS build target**, not a tested or signed Mac installer.
-Build and test it on an actual Mac before relying on it. Apple Silicon and Intel
-require separate native builds; this script does not produce a universal binary.
+DropDL 3.0 ships a native Mac app for Apple Silicon and Intel. Every pull request builds both on GitHub's Mac
+runners, runs the full backend test suite on macOS, checks that the bundled FFmpeg and Node.js need no Homebrew,
+launches the app and waits for its engine, then packages a DMG (`.github/workflows/ci.yml`, job `macos`).
+
+## What is different on a Mac
+
+- **YouTube sign-in** reads the WebKit cookie store instead of WebView2.
+- **Copied-link catcher** watches the macOS pasteboard; **notifications** use Notification Center (click one to open DropDL).
+- **GPU export** uses Apple VideoToolbox. Apple Silicon uses its media engine; Intel Macs use the CPU encoder unless a
+  bitrate or file-size target is set.
+- The **notification-area tray** option is Windows-only and hidden; the Dock keeps DropDL reachable.
+- The app is **ad hoc signed, not notarized**. Gatekeeper blocks the first launch until the user chooses
+  System Settings → Privacy & Security → Open Anyway. Signing and notarization need an Apple Developer account.
 
 ## Build on your Mac
 
 1. Extract the source ZIP. Use macOS 13 or later and Python 3.11+ from python.org
    or Homebrew, matching your Mac's architecture. Do not use the system Python.
-2. Install Node.js 22+ and FFmpeg/ffprobe. With an existing Homebrew installation:
-   `brew install python@3.12 node ffmpeg`.
+2. Install Node.js 22+ and the **full** FFmpeg (the standard Homebrew formula cannot burn captions):
+   `brew install python@3.12 node ffmpeg-full`, then put `$(brew --prefix ffmpeg-full)/bin` first on `PATH`.
 3. Run `bash scripts/build-native-macos.sh` in the project folder. It creates an
    isolated build environment, installs the declared Python/Cocoa dependencies,
    and uses the prebuilt interface. Internet access is required for dependencies.
    To choose Python, set `DROPDL_BUILD_PYTHON` to its executable path.
-4. The result is `dist/DropDLStudio.app`. Copy the **complete app bundle** into
+4. Run `bash scripts/package-macos.sh` to check, launch-test and package it as a DMG in `dist/`.
+5. The result is `dist/DropDLStudio.app`. Copy the **complete app bundle** into
    Applications; open it from Finder. The bundle includes Python and collects
    FFmpeg/ffprobe and Node from the builder, including discovered linked libraries.
    Test that they work on a clean Mac without Homebrew.

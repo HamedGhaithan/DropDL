@@ -1,7 +1,7 @@
 """3.0 desktop features that live in the window process: YouTube sign-in, the copied-link catcher, notifications.
 
-This module runs in the GUI process (pywebview + WinForms) and never imports yt-dlp or FastAPI.
-Everything Windows-specific degrades to a no-op elsewhere.
+This module runs in the GUI process (pywebview: WinForms on Windows, Cocoa on macOS) and never imports yt-dlp or
+FastAPI. The macOS versions live in mac_native; anything without a counterpart degrades to a no-op.
 """
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import re
+import sys
 import threading
 import time
 from urllib.parse import urlparse
@@ -72,7 +73,10 @@ def _edge(window):
 
 
 def read_cookies(window, uri: str, delete: bool = False, timeout: float = 10) -> list[dict] | None:
-    """All cookies the shared WebView2 profile would send to `uri` (optionally deleting them). Must not run on the UI thread."""
+    """All cookies the shared browser profile would send to `uri` (optionally deleting them). Must not run on the UI thread."""
+    if sys.platform == 'darwin':
+        from .mac_native import read_cookies as read_webkit_cookies
+        return read_webkit_cookies(window, uri, delete, timeout)
     if os.name != 'nt':
         return None
     form, browser = _edge(window)
@@ -244,7 +248,11 @@ class LinkCatcher:
 
     def __init__(self, main_window, notifier):
         self.main, self.notifier = main_window, notifier
-        self.clipboard = _Clipboard()
+        if sys.platform == 'darwin':
+            from .mac_native import Pasteboard
+            self.clipboard = Pasteboard()
+        else:
+            self.clipboard = _Clipboard()
         self.enabled = False
         self.language = 'en'
         self.thread = None
@@ -267,6 +275,8 @@ class LinkCatcher:
         return enabled
 
     def _front(self) -> bool:
+        if sys.platform == 'darwin':
+            return self.clipboard.app_is_front()
         try:
             native = self.main.native
             return bool(native.Visible) and self.clipboard.foreground() == int(native.Handle.ToInt64())
@@ -306,6 +316,13 @@ class Notifier:
         self.helper = None
         self.helper_icon = None
         self.pending = None
+        self.mac = None
+
+    def _mac_clicked(self, script):
+        from .mac_native import bring_to_front
+        bring_to_front(self.main)
+        if script:
+            run_js(self.main, script, 'run the notification action')
 
     def _ui(self, fn):
         from System import Action
@@ -337,6 +354,15 @@ class Notifier:
             self.helper.Visible = False
 
     def show(self, title: str, text: str, script: str | None = None) -> bool:
+        if sys.platform == 'darwin':
+            try:
+                if self.mac is None:
+                    from .mac_native import MacNotifier
+                    self.mac = MacNotifier(self._mac_clicked)
+                return self.mac.show(title, text, script)
+            except Exception:                          # noqa: BLE001
+                log.exception('Notification failed')
+                return False
         if os.name != 'nt':
             return False
         self.pending = script

@@ -19,14 +19,15 @@ from .settings import CONFIG_ROOT
 log = logging.getLogger('dropdl.hardware')
 # Fastest first. MediaFoundation (h264_mf) works almost everywhere on Windows but its quality control is
 # weak, so it is never chosen automatically.
+# On a Mac the GPU encoder is Apple's VideoToolbox (Apple Silicon media engine or Intel Quick Sync underneath).
 CANDIDATES = {
-    'h264': ['h264_nvenc', 'h264_amf', 'h264_qsv'],
-    'hevc': ['hevc_nvenc', 'hevc_amf', 'hevc_qsv'],
+    'h264': ['h264_videotoolbox', 'h264_nvenc', 'h264_amf', 'h264_qsv'],
+    'hevc': ['hevc_videotoolbox', 'hevc_nvenc', 'hevc_amf', 'hevc_qsv'],
     'av1': ['av1_nvenc', 'av1_amf', 'av1_qsv'],
 }
 SOFTWARE = {'h264': 'libx264', 'hevc': 'libx265', 'av1': 'libsvtav1'}
-VENDOR = {'nvenc': 'NVIDIA', 'amf': 'AMD', 'qsv': 'Intel'}
-PROBE_VERSION = 2          # bump when the probe flags change, so saved results are measured again
+VENDOR = {'nvenc': 'NVIDIA', 'amf': 'AMD', 'qsv': 'Intel', 'videotoolbox': 'Apple'}
+PROBE_VERSION = 3          # bump when the probe flags change, so saved results are measured again
 _lock = threading.Lock()
 _cache: dict | None = None
 
@@ -141,6 +142,11 @@ def video_flags(encoder: str, quality: int = 20, speed: str = 'balanced', bitrat
         quality_mode = {'fast': 'speed', 'balanced': 'balanced', 'best': 'quality'}.get(speed, 'balanced')
         quality_flags = ['-rc', 'vbr_peak', *rate] if rate else ['-rc', 'cqp', '-qp_i', str(q), '-qp_p', str(q + 2), '-qp_b', str(q + 4)]
         return ['-c:v', encoder, '-quality', quality_mode, *quality_flags, '-pix_fmt', 'nv12']
+    if encoder.endswith('_videotoolbox'):
+        # VideoToolbox constant quality (-q:v 1-100, higher is better) runs on Apple Silicon; Intel Macs only take a
+        # bitrate, so their probe fails here and exports fall back to x264 unless a bitrate target is set.
+        quality_flags = rate or ['-q:v', str(max(1, min(100, round(118 - 2.6 * q))))]
+        return ['-c:v', encoder, '-allow_sw', '0', '-realtime', '0', *quality_flags, '-pix_fmt', 'yuv420p']
     if encoder.endswith('_qsv'):
         preset = {'fast': 'veryfast', 'balanced': 'medium', 'best': 'slow'}.get(speed, 'medium')
         return ['-c:v', encoder, '-preset', preset, *(rate or ['-global_quality', str(q + 2)]), '-pix_fmt', 'nv12']
@@ -148,7 +154,7 @@ def video_flags(encoder: str, quality: int = 20, speed: str = 'balanced', bitrat
 
 
 def is_hardware(encoder: str) -> bool:
-    return encoder.endswith(('_nvenc', '_amf', '_qsv'))
+    return encoder.endswith(('_nvenc', '_amf', '_qsv', '_videotoolbox'))
 
 
 def summary() -> dict:

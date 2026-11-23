@@ -6,13 +6,13 @@
   <a href="https://github.com/HamedGhaithan/DropDL/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/HamedGhaithan/DropDL?label=release&color=7A4DFF"></a>
   <a href="https://github.com/HamedGhaithan/DropDL/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/HamedGhaithan/DropDL/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-FF8A4C"></a>
-  <img alt="Windows 10 and 11" src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-FF3D77">
+  <img alt="Windows and macOS" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS-FF3D77">
   <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen"></a>
 </p>
 
 **DropDL Studio** is a free, open source desktop app that downloads video and audio from the web, converts it to any format, and lets you cut it on a real multi-track timeline, all in one window. It is built on [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [FFmpeg](https://ffmpeg.org), with a modern interface in English and Arabic, dark and light.
 
-<p align="center"><b><a href="https://github.com/HamedGhaithan/DropDL/releases/latest">⬇ Download for Windows</a></b></p>
+<p align="center"><b><a href="https://github.com/HamedGhaithan/DropDL/releases/latest">⬇ Download for Windows and macOS</a></b></p>
 
 
 
@@ -67,6 +67,8 @@
 
 ## Install
 
+### Windows
+
 1. Download **DropDL-Setup.exe** from the [latest release](https://github.com/HamedGhaithan/DropDL/releases/latest).
 2. Run it. It installs the app for your user and fetches what it needs (Python, Node.js, FFmpeg and WebView2) if they are missing, so the first install needs an internet connection.
 3. Open **DropDL Studio** from the Start menu.
@@ -74,6 +76,14 @@
 Requires Windows 10 (1809 or later) or Windows 11, 64-bit. To update, run a newer setup over the old one; your downloads, library and settings are kept.
 
 The installer is not code-signed yet, so Windows SmartScreen may show **Unknown publisher**. Choose **More info → Run anyway**, or build it yourself from source (below).
+
+### macOS
+
+1. Download the DMG for your Mac from the [latest release](https://github.com/HamedGhaithan/DropDL/releases/latest): **macOS-apple-silicon** for M1 and later, **macOS-intel** for Intel Macs (Apple menu → About This Mac shows which).
+2. Open it and drag **DropDL Studio** into **Applications**. Everything it needs (Python, FFmpeg, Node.js) is inside the app.
+3. The app is not signed by an Apple Developer certificate yet, so the first launch is blocked. Open it once, then go to **System Settings → Privacy & Security** and choose **Open Anyway**. After that it opens normally.
+
+Requires macOS 13 or later. Captions, GPU export (Apple VideoToolbox), YouTube sign-in, Phone Link, the copied-link catcher and notifications all work on a Mac; the notification-area tray option is Windows-only. See [MACOS.md](MACOS.md) for building it yourself.
 
 The [user guide](docs/USER-GUIDE.md) covers every feature in detail, and the [changelog](CHANGELOG.md) lists what changed in each version.
 

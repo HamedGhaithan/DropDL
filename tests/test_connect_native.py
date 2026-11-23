@@ -34,6 +34,7 @@ class FakeClipboard:
     def sequence(self): return self.seq
     def text(self): return self.value
     def foreground(self): return self.front_window
+    def app_is_front(self): return self.front_window == 42      # the macOS check
     def copy(self, value): self.value, self.seq = value, self.seq + 1
 
 
@@ -136,3 +137,17 @@ def test_a_notification_click_never_waits_on_the_ui_thread():
     notifier._clicked()
     returned.set()
     assert wait(lambda: ran) and ran == ["window.dropdlClipboard('https://youtu.be/one')"]
+
+
+def test_webkit_cookies_match_the_site_and_its_parent_domains():
+    from app import mac_native
+    assert mac_native._matches('www.youtube.com', '.youtube.com') and mac_native._matches('www.youtube.com', 'www.youtube.com')
+    assert not mac_native._matches('www.youtube.com', 'google.com') and not mac_native._matches('notyoutube.com', 'youtube.com')
+    assert not mac_native._matches('www.youtube.com', '.')
+
+
+def test_mac_pieces_degrade_quietly_without_cocoa():
+    from app import mac_native
+    board = mac_native.Pasteboard()
+    if not board.ok:                                              # Windows / Linux test machines
+        assert board.sequence() == 0 and board.text() is None and board.app_is_front() is False

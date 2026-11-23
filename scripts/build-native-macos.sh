@@ -12,6 +12,7 @@ PYTHON_BIN="${DROPDL_BUILD_PYTHON:-python3}"
 for tool in ffmpeg ffprobe node; do
   command -v "$tool" >/dev/null || { echo "Install $tool first (see MACOS.md)." >&2; exit 1; }
 done
+ffmpeg -hide_banner -filters 2>/dev/null | grep -q " subtitles " || { echo "This FFmpeg cannot burn captions. Use the full build: brew install ffmpeg-full and put $(brew --prefix ffmpeg-full 2>/dev/null || echo its prefix)/bin first on PATH." >&2; exit 1; }
 node -e 'if(Number(process.versions.node.split(".")[0])<22)process.exit(1)' || { echo "Node.js 22+ is required." >&2; exit 1; }
 [[ -f frontend/dist/index.html ]] || { echo "Build the frontend first." >&2; exit 1; }
 "$PYTHON_BIN" -m venv .venv-macos-build
@@ -29,7 +30,8 @@ BUILD_PYTHON="$ROOT/.venv-macos-build/bin/python"
   --add-binary "$(command -v ffprobe):bin" \
   --add-binary "$(command -v node):bin" \
   --collect-all yt_dlp --collect-all yt_dlp_ejs --collect-all webview \
-  --collect-all uvicorn --exclude-module PyQt5 --exclude-module PyQt6 \
+  --collect-all uvicorn --hidden-import app.mac_native --hidden-import UserNotifications \
+  --hidden-import AppKit --hidden-import WebKit --hidden-import PyObjCTools.AppHelper --exclude-module PyQt5 --exclude-module PyQt6 \
   --exclude-module PySide2 --exclude-module PySide6 backend/desktop.py
 echo "Built: $ROOT/dist/DropDLStudio.app"
 echo "Test the complete bundle on a clean Mac before distributing it. See MACOS.md."
